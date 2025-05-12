@@ -26,12 +26,61 @@ const MAX_BOOKINGS_PER_SLOT = 10;
 
 export const BookingScheduler = () => {
     const theme = useTheme();
-    const { currentUser, bookings, addBooking } = useStore();
+    const { currentUser, bookings, addBooking, removeBooking } = useStore();
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [isBookingDialogOpen, setIsBookingDialogOpen] = useState(false);
     const [uiSelectedSlot, setUiSelectedSlot] = useState<string | null>(null);
+    const [bookingToRemove, setBookingToRemove] = useState<string | null>(null);
+    const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
+    const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+
+    // Get user's upcoming bookings
+    const userBookings = currentUser
+        ? bookings
+              .filter((booking) => booking.userId === currentUser.id)
+              .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+        : [];
+
+    // Get booking limits status
+    const getBookingLimitsStatus = () => {
+        if (!currentUser) return { daily: false, weekly: false };
+
+        const bookingDate = format(selectedDate, 'yyyy-MM-dd');
+        const startOfCurrentWeek = startOfWeek(selectedDate);
+        const endOfCurrentWeek = endOfWeek(selectedDate);
+
+        const hasBookingForDay = bookings.some(
+            (booking) => booking.userId === currentUser.id && booking.date === bookingDate
+        );
+
+        const weeklyBookings = bookings.filter(
+            (booking) =>
+                booking.userId === currentUser.id &&
+                new Date(booking.date) >= startOfCurrentWeek &&
+                new Date(booking.date) <= endOfCurrentWeek
+        );
+
+        return {
+            daily: hasBookingForDay,
+            weekly: weeklyBookings.length >= 3,
+        };
+    };
+
+    // Handle resetting booking limits
+    const handleResetLimits = () => {
+        setIsResetDialogOpen(true);
+    };
+
+    // Confirm reset booking limits
+    const handleConfirmReset = () => {
+        // Remove all bookings for the current user
+        userBookings.forEach((booking) => {
+            removeBooking(booking.id);
+        });
+        setIsResetDialogOpen(false);
+    };
 
     // Handle switching between daily and weekly views
     const handleViewModeChange = (_: React.SyntheticEvent, newValue: ViewMode) => {
@@ -42,6 +91,7 @@ export const BookingScheduler = () => {
     const handleDateChange = (date: Date | null) => {
         if (date) {
             setSelectedDate(date);
+            setUiSelectedSlot(null);
         }
     };
 
@@ -97,10 +147,10 @@ export const BookingScheduler = () => {
         if (!currentUser || !selectedSlot) return;
 
         const [startTime] = selectedSlot.split(' - ');
-        const endTime = format(
-            new Date(selectedDate.setHours(parseInt(startTime) + 1, 30, 0)),
-            'HH:mm'
-        );
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
+        const endDate = new Date(selectedDate);
+        endDate.setHours(startHours + 1, startMinutes + 30, 0);
+        const endTime = format(endDate, 'HH:mm');
         const bookingDate = format(selectedDate, 'yyyy-MM-dd');
 
         // Final check for weekly booking limit
@@ -159,6 +209,21 @@ export const BookingScheduler = () => {
 
     // Helper: Get user's timezone (for demo, hardcode to London)
     const timeZoneLabel = 'ZAGREB (GMT+02:00)';
+
+    // Handle removing a booking
+    const handleRemoveBooking = (bookingId: string) => {
+        setBookingToRemove(bookingId);
+        setIsRemoveDialogOpen(true);
+    };
+
+    // Confirm booking removal
+    const handleConfirmRemove = () => {
+        if (bookingToRemove) {
+            removeBooking(bookingToRemove);
+            setBookingToRemove(null);
+            setIsRemoveDialogOpen(false);
+        }
+    };
 
     // Render the pretty grid of fixed slots
     const renderDailyView = () => {
@@ -339,6 +404,75 @@ export const BookingScheduler = () => {
                 background: theme.palette.background.default,
             }}
         >
+            {/* User's upcoming bookings section */}
+            {currentUser && userBookings.length > 0 && (
+                <Box sx={{ mb: 4 }}>
+                    <Box
+                        sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2,
+                        }}
+                    >
+                        <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                            Your Upcoming Bookings
+                        </Typography>
+                        <Button
+                            variant="outlined"
+                            color="primary"
+                            onClick={handleResetLimits}
+                            sx={{
+                                textTransform: 'none',
+                                fontWeight: 500,
+                            }}
+                        >
+                            Reset All Bookings
+                        </Button>
+                    </Box>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                        {userBookings.map((booking) => (
+                            <Card
+                                key={booking.id}
+                                sx={{
+                                    minWidth: 280,
+                                    background: theme.palette.background.paper,
+                                    transition: 'all 0.2s ease-in-out',
+                                    '&:hover': {
+                                        transform: 'translateY(-2px)',
+                                        boxShadow: theme.shadows[4],
+                                    },
+                                }}
+                            >
+                                <CardContent>
+                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }}>
+                                        {format(new Date(booking.date), 'EEEE, MMMM d')}
+                                    </Typography>
+                                    <Typography
+                                        variant="body1"
+                                        sx={{ color: 'text.secondary', mb: 2 }}
+                                    >
+                                        {booking.startTime} - {booking.endTime}
+                                    </Typography>
+                                    <Button
+                                        variant="outlined"
+                                        color="error"
+                                        size="small"
+                                        onClick={() => handleRemoveBooking(booking.id)}
+                                        sx={{
+                                            textTransform: 'none',
+                                            fontWeight: 500,
+                                        }}
+                                    >
+                                        Cancel Booking
+                                    </Button>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </Box>
+                </Box>
+            )}
+
             {/* View mode tabs (Daily/Weekly) */}
             <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
                 <Tabs
@@ -453,6 +587,91 @@ export const BookingScheduler = () => {
                         }}
                     >
                         Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Remove booking confirmation dialog */}
+            <Dialog
+                open={isRemoveDialogOpen}
+                onClose={() => setIsRemoveDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        minWidth: '320px',
+                    },
+                }}
+            >
+                <DialogTitle sx={{ pb: 1 }}>Cancel Booking</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to cancel this booking? This action cannot be undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={() => setIsRemoveDialogOpen(false)}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                        }}
+                    >
+                        Keep Booking
+                    </Button>
+                    <Button
+                        onClick={handleConfirmRemove}
+                        variant="contained"
+                        color="error"
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            px: 3,
+                        }}
+                    >
+                        Cancel Booking
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Reset booking limits confirmation dialog */}
+            <Dialog
+                open={isResetDialogOpen}
+                onClose={() => setIsResetDialogOpen(false)}
+                PaperProps={{
+                    sx: {
+                        borderRadius: 2,
+                        minWidth: '320px',
+                    },
+                }}
+            >
+                <DialogTitle sx={{ pb: 1 }}>Reset All Bookings</DialogTitle>
+                <DialogContent>
+                    <Typography>
+                        Are you sure you want to cancel all your bookings? This action cannot be
+                        undone.
+                    </Typography>
+                </DialogContent>
+                <DialogActions sx={{ px: 3, pb: 2 }}>
+                    <Button
+                        onClick={() => setIsResetDialogOpen(false)}
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                        }}
+                    >
+                        Keep Bookings
+                    </Button>
+                    <Button
+                        onClick={handleConfirmReset}
+                        variant="contained"
+                        color="error"
+                        sx={{
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            px: 3,
+                        }}
+                    >
+                        Reset All
                     </Button>
                 </DialogActions>
             </Dialog>
