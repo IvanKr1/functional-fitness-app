@@ -1,110 +1,124 @@
-# Functional Fitness App Setup Guide
+# Gym Booking Application
 
-## Quick Start
+A modern web application for managing gym bookings, built with React, TypeScript, and Material-UI.
 
-1. Clone the repository
-2. Setup the backend (server)
-3. Setup the frontend (client)
-4. Start both servers
+## Features
 
-## Detailed Setup
+- 🔐 **Authentication**
 
-### 1. Backend Setup
+    - Mock login system with user/admin roles
+    - Persistent session management
+    - Role-based access control
 
-```bash
-# Create and navigate to server directory
-mkdir server
-cd server
+- 📅 **Booking Scheduler**
 
-# Initialize Node.js project
-npm init -y
+    - Daily and weekly calendar views
+    - Interactive time slot booking
+    - Maximum 10 users per time slot
+    - Real-time booking status updates
 
-# Install dependencies
-npm install express typescript @types/node @types/express cors dotenv jsonwebtoken bcryptjs pg typeorm
-npm install --save-dev @types/cors @types/jsonwebtoken @types/bcryptjs nodemon ts-node
+- 💄 **Modern UI**
+    - Material-UI components
+    - Responsive design
+    - Clean and professional interface
+    - Dark/light mode support
 
-# Create TypeScript config
-npx tsc --init
+## Tech Stack
 
-# Create .env file
-echo "PORT=3001
-DB_HOST=localhost
-DB_PORT=5432
-DB_USERNAME=postgres
-DB_PASSWORD=postgres
-DB_NAME=fitness_app
-JWT_SECRET=your-secret-key" > .env
+- ⚡️ [Vite](https://vitejs.dev/) - Next Generation Frontend Tooling
+- ⚛️ [React](https://reactjs.org/) - A JavaScript library for building user interfaces
+- 📘 [TypeScript](https://www.typescriptlang.org/) - JavaScript with syntax for types
+- 🎨 [Material-UI](https://mui.com/) - React UI framework
+- 📊 [Zustand](https://github.com/pmndrs/zustand) - State management
+- 📅 [date-fns](https://date-fns.org/) - Date utility library
+- 🧪 [Vitest](https://vitest.dev/) - Testing framework
+- 🎯 [ESLint](https://eslint.org/) - Code linting
+- 💅 [Prettier](https://prettier.io/) - Code formatting
+- 🎨 [TailwindCSS](https://tailwindcss.com/) - Utility-first CSS framework
 
-# Create project structure
-mkdir -p src/controllers src/entities src/database src/types
+## Prerequisites
 
-# Start development server
-npm run dev
-```
+- Node.js (v16 or higher)
+- npm (v7 or higher)
 
-### 2. Frontend Setup
+## Getting Started
 
-```bash
-# Navigate to client directory
-cd ../client
+1. Clone the repository:
 
-# Create Vite project
-npm create vite@latest . -- --template react-ts
+    ```bash
+    git clone <repository-url>
+    cd functional-fitness-app
+    ```
 
-# Install dependencies
-npm install @mui/material @emotion/react @emotion/styled @mui/icons-material axios react-router-dom
+2. Install dependencies:
 
-# Start development server
-npm run dev
-```
+    ```bash
+    npm install
+    ```
 
-### 3. Database Setup
+3. Start the development server:
 
-```bash
-# Create PostgreSQL database
-createdb fitness_app
-```
+    ```bash
+    npm run dev
+    ```
+
+4. Open your browser and navigate to:
+    ```
+    http://localhost:5173
+    ```
+
+## Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run test` - Run tests
+- `npm run test:coverage` - Run tests with coverage
+- `npm run lint` - Run ESLint
+- `npm run format` - Format code with Prettier
 
 ## Project Structure
 
 ```
-functional-fitness-app/
-├── client/           # Frontend React application
-│   ├── src/         # Source files
-│   ├── public/      # Static files
-│   └── package.json # Frontend dependencies
-└── server/          # Backend Node.js server
-    ├── src/         # Source files
-    │   ├── controllers/  # API controllers
-    │   ├── entities/     # Database models
-    │   ├── database/     # Database configuration
-    │   └── types/        # TypeScript types
-    └── package.json # Backend dependencies
+src/
+├── components/         # Reusable components
+├── pages/             # Page components
+├── layouts/           # Layout components
+├── store/             # State management
+├── types/             # TypeScript types
+├── test/              # Test setup
+└── utils/             # Utility functions
 ```
 
-## Development Scripts
+## Testing
 
-### Backend
+The project uses Vitest and React Testing Library for testing. Run tests with:
 
 ```bash
-npm run dev    # Start development server
-npm run build  # Build TypeScript
-npm run start  # Start production server
+npm test
 ```
 
-### Frontend
+For test coverage:
 
 ```bash
-npm run dev    # Start development server
-npm run build  # Build for production
-npm run preview # Preview production build
+npm run test:coverage
 ```
 
-## Technologies Used
+## Code Quality
 
--   Backend: Node.js, Express, TypeScript, PostgreSQL, TypeORM
--   Frontend: React, TypeScript, Vite, Material-UI
+- ESLint for code linting
+- Prettier for code formatting
+- TypeScript for type safety
+- Pre-commit hooks for code quality checks
+
+## Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
 
 ## License
 
-MIT
+This project is licensed under the MIT License - see the LICENSE file for details.
