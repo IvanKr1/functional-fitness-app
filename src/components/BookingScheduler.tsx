@@ -102,35 +102,9 @@ export const BookingScheduler = () => {
         );
         const bookingDate = format(selectedDate, 'yyyy-MM-dd');
 
-        // Final check for daily booking limit
-        const hasBookingForDay = bookings.some(
-            (booking) => booking.userId === currentUser.id && booking.date === bookingDate
-        );
-
-        if (hasBookingForDay) {
-            alert('You can only have one booking per day');
-            setIsBookingDialogOpen(false);
-            setSelectedSlot(null);
-            return;
-        }
-
         // Final check for weekly booking limit
         const startOfCurrentWeek = startOfWeek(selectedDate);
         const endOfCurrentWeek = endOfWeek(selectedDate);
-
-        const weeklyBookings = bookings.filter(
-            (booking) =>
-                booking.userId === currentUser.id &&
-                new Date(booking.date) >= startOfCurrentWeek &&
-                new Date(booking.date) <= endOfCurrentWeek
-        );
-
-        if (weeklyBookings.length >= 3) {
-            alert('You have reached the maximum limit of 3 bookings per week');
-            setIsBookingDialogOpen(false);
-            setSelectedSlot(null);
-            return;
-        }
 
         // Add the booking if all checks pass
         addBooking({
@@ -147,10 +121,10 @@ export const BookingScheduler = () => {
     };
 
     // Generate time slots for the selected date
-    // Creates slots from 6 AM to 10 PM with 1.5 hour duration
+    // Creates slots from 7 AM to 10 PM with 1.5 hour duration
     const generateTimeSlots = () => {
         const slots = [];
-        for (let hour = 6; hour < 21; hour++) {
+        for (let hour = 7; hour < 21; hour++) {
             const startTime = format(new Date().setHours(hour, 0, 0), 'HH:mm');
             const endTime = format(new Date().setHours(hour + 1, 30, 0), 'HH:mm');
             const slotBookings = bookings.filter(
