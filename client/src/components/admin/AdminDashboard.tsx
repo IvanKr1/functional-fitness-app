@@ -10,7 +10,6 @@ const HOURS = Array.from({ length: 13 }, (_, i) => `${i + 8}:00`)
 
 export function AdminDashboard({ className }: AdminDashboardProps) {
   const {
-    bookings,
     filters,
     pagination,
     isLoading,

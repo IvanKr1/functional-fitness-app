@@ -1,13 +1,24 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
+import { AdminLayout } from './layouts/AdminLayout';
 import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
-import { BookingScheduler } from './components/BookingScheduler';
+import { BookingScheduler } from './components/Booking/BookingScheduler';
 import { useStore } from './store/useStore';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     const { currentUser } = useStore();
     return currentUser ? <>{children}</> : <Navigate to="/login" />;
+};
+
+const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
+    const { currentUser } = useStore();
+    
+    if (currentUser?.role === 'admin') {
+        return <AdminLayout>{children}</AdminLayout>;
+    }
+    
+    return <MainLayout>{children}</MainLayout>;
 };
 
 export const App = () => {
@@ -16,12 +27,17 @@ export const App = () => {
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
                 <Route
-                    path="/admin"
+                    path="/admin/*"
                     element={
                         <PrivateRoute>
-                            <MainLayout>
-                                <AdminPage />
-                            </MainLayout>
+                            <AdminLayout>
+                                <Routes>
+                                    <Route path="/" element={<AdminPage />} />
+                                    <Route path="/bookings/all" element={<AdminPage />} />
+                                    <Route path="/bookings/active" element={<AdminPage />} />
+                                    <Route path="/settings" element={<div>Settings Page</div>} />
+                                </Routes>
+                            </AdminLayout>
                         </PrivateRoute>
                     }
                 />
@@ -29,9 +45,9 @@ export const App = () => {
                     path="/"
                     element={
                         <PrivateRoute>
-                            <MainLayout>
+                            <ConditionalLayout>
                                 <BookingScheduler />
-                            </MainLayout>
+                            </ConditionalLayout>
                         </PrivateRoute>
                     }
                 />
