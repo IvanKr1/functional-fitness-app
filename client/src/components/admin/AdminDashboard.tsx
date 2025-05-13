@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { useAdminBookingsStore } from '../../store/adminBookings.store'
 import type { AdminDashboardProps } from '../../types/admin.types'
 import { Box, Button, TextField, Select, MenuItem, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Pagination } from '@mui/material'
+import { Spinner } from '@radix-ui/themes'
 import type { ChangeEvent } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import { cn } from '../../lib/utils'
@@ -86,7 +87,9 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
 
         {/* Loading State */}
         {isLoading ? (
-          <Typography>Loading bookings...</Typography>
+          <Box display="flex" justifyContent="center" p={4}>
+            <Spinner size="3" />
+          </Box>
         ) : (
           <>
             {/* Bookings Table */}
