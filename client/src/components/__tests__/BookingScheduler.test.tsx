@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { BookingScheduler } from '../BookingScheduler';
+import { BookingScheduler } from '../Booking/BookingScheduler';
 import { useStore } from '../../store/useStore';
 
 vi.mock('../../store/useStore', () => ({
