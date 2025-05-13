@@ -1,13 +1,75 @@
 import { useEffect } from 'react'
 import { useAdminBookingsStore } from '../../store/adminBookings.store'
 import type { AdminDashboardProps } from '../../types/admin.types'
-import { Box, Button, TextField, Select, MenuItem, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Pagination } from '@mui/material'
+import { Box, Button, TextField, Select, MenuItem, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Pagination, styled, Chip } from '@mui/material'
 import { Spinner } from '@radix-ui/themes'
 import type { ChangeEvent } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import { cn } from '../../lib/utils'
+import type { Theme } from '@mui/material/styles'
 
 const HOURS = Array.from({ length: 13 }, (_, i) => `${i + 8}:00`)
+
+const StyledTableContainer = styled(TableContainer)(({ theme }) => ({
+  boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
+  borderRadius: theme.shape.borderRadius,
+  '& .MuiTable-root': {
+    minWidth: 650,
+  },
+}))
+
+const StyledTableHead = styled(TableHead)(({ theme }) => ({
+  '& .MuiTableCell-head': {
+    backgroundColor: theme.palette.primary.main,
+    color: theme.palette.primary.contrastText,
+    fontWeight: 600,
+    fontSize: '0.95rem',
+    padding: theme.spacing(2),
+    whiteSpace: 'nowrap',
+    position: 'sticky',
+    top: 0,
+    zIndex: 1,
+  },
+}))
+
+const StyledTableRow = styled(TableRow)(({ theme }) => ({
+  '&:nth-of-type(odd)': {
+    backgroundColor: theme.palette.action.hover,
+  },
+  '&:hover': {
+    backgroundColor: theme.palette.action.selected,
+    transition: 'background-color 0.2s ease',
+  },
+  '& .MuiTableCell-root': {
+    padding: theme.spacing(2),
+    borderBottom: `1px solid ${theme.palette.divider}`,
+  },
+}))
+
+interface StatusChipProps {
+  status: 'active' | 'cancelled' | 'completed'
+}
+
+const StatusChip = styled(Chip, {
+  shouldForwardProp: (prop) => prop !== 'status',
+})<StatusChipProps>(({ theme, status }) => ({
+  fontWeight: 500,
+  fontSize: '0.85rem',
+  height: 24,
+  borderRadius: 12,
+  ...(status === 'active' && {
+    backgroundColor: theme.palette.success.light,
+    color: theme.palette.success.dark,
+  }),
+  ...(status === 'cancelled' && {
+    backgroundColor: theme.palette.error.light,
+    color: theme.palette.error.dark,
+  }),
+  ...(status === 'completed' && {
+    backgroundColor: theme.palette.grey[200],
+    color: theme.palette.grey[700],
+  }),
+}))
 
 export function AdminDashboard({ className }: AdminDashboardProps) {
   const {
@@ -93,42 +155,54 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
         ) : (
           <>
             {/* Bookings Table */}
-            <TableContainer component={Paper}>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>User</TableCell>
-                    <TableCell>Date</TableCell>
-                    <TableCell>Hour</TableCell>
-                    <TableCell>Facility</TableCell>
-                    <TableCell>Status</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {paginatedBookings.map((booking) => (
-                    <TableRow key={booking.id}>
-                      <TableCell>{booking.userName}</TableCell>
-                      <TableCell>{booking.date}</TableCell>
-                      <TableCell>{booking.bookingHour}</TableCell>
-                      <TableCell>{booking.facility}</TableCell>
-                      <TableCell>
-                        <Typography
-                          color={
-                            booking.status === 'active'
-                              ? 'success.main'
-                              : booking.status === 'cancelled'
-                              ? 'error.main'
-                              : 'text.secondary'
-                          }
-                        >
-                          {booking.status}
-                        </Typography>
-                      </TableCell>
+            <Box component={Paper}>
+              <StyledTableContainer>
+                <Table stickyHeader>
+                  <StyledTableHead>
+                    <TableRow>
+                      <TableCell>User</TableCell>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Hour</TableCell>
+                      <TableCell>Facility</TableCell>
+                      <TableCell>Status</TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+                  </StyledTableHead>
+                  <TableBody>
+                    {paginatedBookings.map((booking) => (
+                      <StyledTableRow key={booking.id}>
+                        <TableCell>
+                          <Typography variant="body2" fontWeight={500}>
+                            {booking.userName}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {booking.date}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {booking.bookingHour}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <Typography variant="body2">
+                            {booking.facility}
+                          </Typography>
+                        </TableCell>
+                        <TableCell>
+                          <StatusChip
+                            label={booking.status}
+                            status={booking.status as 'active' | 'cancelled' | 'completed'}
+                            size="small"
+                          />
+                        </TableCell>
+                      </StyledTableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </StyledTableContainer>
+            </Box>
 
             {/* Pagination */}
             {totalPages > 1 && (
