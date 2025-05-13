@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
+import { AdminPage } from './pages/AdminPage';
 import { BookingScheduler } from './components/BookingScheduler';
 import { useStore } from './store/useStore';
 
@@ -14,6 +15,16 @@ export const App = () => {
         <Router>
             <Routes>
                 <Route path="/login" element={<LoginPage />} />
+                <Route
+                    path="/admin"
+                    element={
+                        <PrivateRoute>
+                            <MainLayout>
+                                <AdminPage />
+                            </MainLayout>
+                        </PrivateRoute>
+                    }
+                />
                 <Route
                     path="/"
                     element={
