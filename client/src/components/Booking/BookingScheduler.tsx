@@ -21,6 +21,7 @@ import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { useStore } from '../../store/useStore';
 import type { ViewMode } from '../../types';
 
+
 // Maximum number of bookings allowed per time slot
 const MAX_BOOKINGS_PER_SLOT = 10;
 
