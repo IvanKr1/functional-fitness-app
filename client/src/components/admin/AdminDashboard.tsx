@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { useAdminBookingsStore } from '../../store/adminBookings.store'
 import type { AdminDashboardProps } from '../../types/admin.types'
-import { Box, Button, TextField, Select, MenuItem, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper } from '@mui/material'
+import { Box, Button, TextField, Select, MenuItem, Typography, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Pagination } from '@mui/material'
 import type { ChangeEvent } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import { cn } from '../../lib/utils'
@@ -36,7 +36,7 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
     setFilters({ bookingHour: e.target.value })
   }
 
-  const handlePageChange = (page: number) => {
+  const handlePageChange = (_event: React.ChangeEvent<unknown>, page: number) => {
     setPagination({ currentPage: page })
   }
 
@@ -131,25 +131,15 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
             {/* Pagination */}
             {totalPages > 1 && (
               <Box display="flex" justifyContent="center" mt={2}>
-                <Box display="flex" alignItems="center" gap={2}>
-                  <Button 
-                    variant="outlined" 
-                    disabled={pagination.currentPage === 1}
-                    onClick={() => handlePageChange(pagination.currentPage - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <Typography>
-                    Page {pagination.currentPage} of {totalPages}
-                  </Typography>
-                  <Button 
-                    variant="outlined" 
-                    disabled={pagination.currentPage === totalPages}
-                    onClick={() => handlePageChange(pagination.currentPage + 1)}
-                  >
-                    Next
-                  </Button>
-                </Box>
+                <Pagination
+                  count={totalPages}
+                  page={pagination.currentPage}
+                  onChange={handlePageChange}
+                  color="primary"
+                  shape="rounded"
+                  showFirstButton
+                  showLastButton
+                />
               </Box>
             )}
           </>
