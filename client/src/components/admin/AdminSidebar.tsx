@@ -82,7 +82,7 @@ export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
               )}
             >
               <span className={cn('transition-opacity duration-200', open ? 'opacity-100' : 'opacity-0')}>
-                All Bookings
+                Bookings List
               </span>
             </Link>
             {/* <Link
