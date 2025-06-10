@@ -23,7 +23,7 @@ model User {
   passwordHash          String
   role                  Role      @default(USER)
   notes                 String?   // Optional injury/health notes
-  weeklyBookingLimit    Int       @default(2) // Configurable by admin
+  weeklyBookingLimit    Int       @default(3) // Configurable by admin
   lastPaymentDate       DateTime?
   nextPaymentDueDate    DateTime?
   createdAt             DateTime  @default(now())

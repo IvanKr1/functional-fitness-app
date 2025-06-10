@@ -51,7 +51,7 @@ A comprehensive RESTful API for managing gym bookings, user authentication, and 
    DATABASE_URL="postgresql://username:password@localhost:5432/gym_booking_db"
    JWT_SECRET="your-super-secret-jwt-key-here-minimum-32-characters"
    COOKIE_SECRET="your-cookie-secret-here-minimum-32-characters"
-   PORT=5000
+   PORT=9080
    NODE_ENV=development
    FRONTEND_URL=http://localhost:3000
    ```
@@ -72,7 +72,7 @@ A comprehensive RESTful API for managing gym bookings, user authentication, and 
 
 ### Base URL
 ```
-http://localhost:5000/api
+http://localhost:9080/api
 ```
 
 ### Authentication Endpoints

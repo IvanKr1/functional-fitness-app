@@ -11,7 +11,7 @@ dotenv.config()
 const configSchema = z.object({
     // Server configuration
     NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
-    PORT: z.string().transform((val) => parseInt(val, 10)).default('5000'),
+    PORT: z.string().transform((val) => parseInt(val, 10)).default('9080'),
 
     // Database
     DATABASE_URL: z.string().min(1, 'Database URL is required'),
