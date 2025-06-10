@@ -4,7 +4,6 @@ import * as Collapsible from '@radix-ui/react-collapsible'
 import { ChevronDown, ChevronUp, LayoutDashboard, Calendar, Settings, Menu } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
-const SIDEBAR_WIDTH = 240
 
 interface AdminSidebarProps {
   open: boolean
