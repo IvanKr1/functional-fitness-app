@@ -48,9 +48,15 @@ const generateToken = (userId: string, email: string, role: Role): string => {
         role
     }
 
-    return jwt.sign(payload, jwtConfig.secret, {
-        expiresIn: jwtConfig.expiresIn
-    })
+    if (!jwtConfig.secret) {
+        throw new Error('JWT secret is not configured')
+    }
+
+    const options = {
+        expiresIn: jwtConfig.expiresIn || '24h'
+    }
+
+    return jwt.sign(payload, jwtConfig.secret as string, options)
 }
 
 /**
@@ -138,7 +144,7 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
         data: {
             name,
             email: email.toLowerCase(),
-            mobilePhone,
+            mobilePhone: mobilePhone || null,
             passwordHash,
             role,
             weeklyBookingLimit
@@ -151,7 +157,7 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
             name: user.name,
             email: user.email,
             role: user.role,
-            mobilePhone: user.mobilePhone || undefined,
+            ...(user.mobilePhone && { mobilePhone: user.mobilePhone }),
             weeklyBookingLimit: user.weeklyBookingLimit
         },
         generatedPassword

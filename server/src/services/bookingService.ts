@@ -98,7 +98,7 @@ export const createBooking = async (
     startTime: Date
     endTime: Date
     status: BookingStatus
-    notes?: string
+    notes?: string | undefined
 }> => {
     const { startTime: startTimeStr, endTime: endTimeStr, notes } = bookingData
 
@@ -146,7 +146,7 @@ export const createBooking = async (
             userId,
             startTime,
             endTime,
-            notes,
+            notes: notes || null,
             status: BookingStatus.CONFIRMED
         }
     })
@@ -173,7 +173,7 @@ export const updateBooking = async (
     startTime: Date
     endTime: Date
     status: BookingStatus
-    notes?: string
+    notes?: string | null
 }> => {
     // Get existing booking
     const existingBooking = await prisma.booking.findUnique({
@@ -246,7 +246,7 @@ export const updateBooking = async (
         startTime: updatedBooking.startTime,
         endTime: updatedBooking.endTime,
         status: updatedBooking.status,
-        notes: updatedBooking.notes || undefined
+        notes: updatedBooking.notes || null
     }
 }
 
@@ -294,7 +294,7 @@ export const getUserBookings = async (
     startTime: Date
     endTime: Date
     status: BookingStatus
-    notes?: string
+    notes?: string | null
 }>> => {
     const bookings = await prisma.booking.findMany({
         where: {
@@ -316,7 +316,7 @@ export const getUserBookings = async (
         startTime: booking.startTime,
         endTime: booking.endTime,
         status: booking.status,
-        notes: booking.notes || undefined
+        notes: booking.notes || null
     }))
 }
 
@@ -339,7 +339,7 @@ export const getAllBookings = async (
     startTime: Date
     endTime: Date
     status: BookingStatus
-    notes?: string
+    notes?: string | null
 }>> => {
     const bookings = await prisma.booking.findMany({
         where: {
@@ -372,7 +372,7 @@ export const getAllBookings = async (
         startTime: booking.startTime,
         endTime: booking.endTime,
         status: booking.status,
-        notes: booking.notes || undefined
+        notes: booking.notes || null
     }))
 }
 

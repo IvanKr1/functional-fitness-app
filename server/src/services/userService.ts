@@ -14,13 +14,13 @@ export const getAllUsers = async (): Promise<Array<{
     id: string
     name: string
     email: string
-    mobilePhone?: string
     role: Role
     weeklyBookingLimit: number
-    lastPaymentDate?: Date
-    nextPaymentDueDate?: Date
-    notes?: string
     createdAt: Date
+    mobilePhone?: string | undefined
+    lastPaymentDate?: Date | null
+    nextPaymentDueDate?: Date | null
+    notes?: string | undefined
 }>> => {
     const users = await prisma.user.findMany({
         select: {
@@ -45,8 +45,8 @@ export const getAllUsers = async (): Promise<Array<{
         mobilePhone: user.mobilePhone || undefined,
         role: user.role,
         weeklyBookingLimit: user.weeklyBookingLimit,
-        lastPaymentDate: user.lastPaymentDate || undefined,
-        nextPaymentDueDate: user.nextPaymentDueDate || undefined,
+        lastPaymentDate: user.lastPaymentDate,
+        nextPaymentDueDate: user.nextPaymentDueDate,
         notes: user.notes || undefined,
         createdAt: user.createdAt
     }))
@@ -63,13 +63,13 @@ export const getUserById = async (
     id: string
     name: string
     email: string
-    mobilePhone?: string
+    createdAt: Date
     role: Role
     weeklyBookingLimit: number
-    lastPaymentDate?: Date
-    nextPaymentDueDate?: Date
-    notes?: string
-    createdAt: Date
+    mobilePhone?: string | undefined
+    lastPaymentDate?: Date | undefined
+    nextPaymentDueDate?: Date | null
+    notes?: string | undefined
 }> => {
     // Users can only view their own profile, admins can view any
     if (requestingUserRole !== Role.ADMIN && userId !== requestingUserId) {
@@ -104,7 +104,7 @@ export const getUserById = async (
         role: user.role,
         weeklyBookingLimit: user.weeklyBookingLimit,
         lastPaymentDate: user.lastPaymentDate || undefined,
-        nextPaymentDueDate: user.nextPaymentDueDate || undefined,
+        nextPaymentDueDate: user.nextPaymentDueDate || null,
         notes: user.notes || undefined,
         createdAt: user.createdAt
     }
@@ -122,11 +122,11 @@ export const updateUser = async (
     id: string
     name: string
     email: string
-    mobilePhone?: string
     role: Role
     weeklyBookingLimit: number
-    lastPaymentDate?: Date
-    nextPaymentDueDate?: Date
+    mobilePhone?: string | undefined
+    lastPaymentDate?: Date | null
+    nextPaymentDueDate?: Date | null
 }> => {
     // Users can only update their own profile (limited fields)
     // Admins can update any user (all fields)
@@ -192,8 +192,8 @@ export const updateUser = async (
         mobilePhone: updatedUser.mobilePhone || undefined,
         role: updatedUser.role,
         weeklyBookingLimit: updatedUser.weeklyBookingLimit,
-        lastPaymentDate: updatedUser.lastPaymentDate || undefined,
-        nextPaymentDueDate: updatedUser.nextPaymentDueDate || undefined
+        lastPaymentDate: updatedUser.lastPaymentDate || null,
+        nextPaymentDueDate: updatedUser.nextPaymentDueDate || null
     }
 }
 

@@ -104,7 +104,7 @@ export const changePassword = async (
     res: Response
 ): Promise<void> => {
     try {
-        const userId = req.params.id
+        const userId = req.params.id as string
         const { currentPassword, newPassword } = req.body
 
         // Users can only change their own password, admins can change any password
@@ -114,7 +114,7 @@ export const changePassword = async (
                 error: 'You can only change your own password'
             }
             res.status(403).json(response)
-            return
+            return;
         }
 
         await authService.changePassword(userId, currentPassword, newPassword)
