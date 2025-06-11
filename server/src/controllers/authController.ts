@@ -1,7 +1,7 @@
 import { Response } from 'express'
 import { AuthenticatedRequest, ApiResponse } from '../types/index.js'
 import * as authService from '../services/authService.js'
-import { cookieConfig } from '../config/index.js'
+import { cookieConfig, isDevelopment } from '../config/index.js'
 
 /**
  * User login endpoint
@@ -198,6 +198,54 @@ export const refreshToken = async (
         const response: ApiResponse = {
             success: false,
             error: 'Token refresh failed'
+        }
+
+        res.status(401).json(response)
+    }
+}
+
+/**
+ * Get development token endpoint (development only)
+ * Returns a long-lasting token for development/testing purposes
+ */
+export const getDevToken = async (
+    req: AuthenticatedRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        // Only allow in development mode
+        if (!isDevelopment()) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Development tokens are only available in development mode'
+            }
+            res.status(403).json(response)
+            return
+        }
+
+        const { email, password } = req.body
+
+        // Get user data first
+        const { user } = await authService.loginUser({ email, password })
+
+        // Generate a long-lasting token (1 year)
+        const devToken = await authService.generateDevToken(user.id, user.email, user.role)
+
+        const response: ApiResponse = {
+            success: true,
+            data: {
+                user,
+                token: devToken,
+                message: 'Development token generated (expires in 1 year)',
+                usage: 'Use this token in Authorization header: Bearer ' + devToken
+            }
+        }
+
+        res.status(200).json(response)
+    } catch (error) {
+        const response: ApiResponse = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to generate development token'
         }
 
         res.status(401).json(response)

@@ -12,7 +12,7 @@ import { prisma } from '../config/database.js'
 
 /**
  * JWT Authentication middleware
- * Verifies JWT token from HttpOnly cookie and adds user data to request
+ * Verifies JWT token from HttpOnly cookie or Authorization header and adds user data to request
  */
 export const authenticateToken = async (
     req: AuthenticatedRequest,
@@ -20,7 +20,18 @@ export const authenticateToken = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const token = req.cookies?.token
+        // Try to get token from cookie first, then from Authorization header
+        let token = req.cookies?.token
+        let tokenSource = 'cookie'
+
+        if (!token) {
+            const authHeader = req.headers.authorization
+            console.log('authHeader', authHeader)
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7) // Remove 'Bearer ' prefix
+                tokenSource = 'authorization-header'
+            }
+        }
 
         if (!token) {
             throw new AuthenticationError('No authentication token provided')
@@ -57,7 +68,8 @@ export const authenticateToken = async (
         if (error instanceof jwt.JsonWebTokenError) {
             res.status(401).json({
                 success: false,
-                error: 'Invalid authentication token'
+                error: 'Invalid authentication token',
+                details: error.message
             })
             return
         }
@@ -135,6 +147,7 @@ export const requireUser = requireRole([Role.USER, Role.ADMIN])
 /**
  * Optional authentication middleware
  * Adds user data if token is present but doesn't require authentication
+ * Supports both cookie and Authorization header
  */
 export const optionalAuth = async (
     req: AuthenticatedRequest,
@@ -142,7 +155,15 @@ export const optionalAuth = async (
     next: NextFunction
 ): Promise<void> => {
     try {
-        const token = req.cookies?.token
+        // Try to get token from cookie first, then from Authorization header
+        let token = req.cookies?.token
+
+        if (!token) {
+            const authHeader = req.headers.authorization
+            if (authHeader && authHeader.startsWith('Bearer ')) {
+                token = authHeader.substring(7) // Remove 'Bearer ' prefix
+            }
+        }
 
         if (token) {
             const decoded = jwt.verify(token, jwtConfig.secret) as JWTPayload

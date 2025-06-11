@@ -103,6 +103,13 @@ export const updateBookingLimitSchema = z.object({
     weeklyBookingLimit: z.number().min(1, 'Booking limit must be at least 1').max(10, 'Booking limit cannot exceed 10')
 })
 
+export const recordPaymentSchema = z.object({
+    paymentDate: z.string().datetime().optional(),
+    amount: z.number().min(0.01, 'Amount must be greater than 0').default(50.00).optional(),
+    currency: z.string().length(3, 'Currency must be 3 characters (e.g., EUR, USD)').default('EUR').optional(),
+    notes: z.string().max(500, 'Notes too long').optional()
+})
+
 export const changePasswordSchema = z.object({
     currentPassword: z.string().min(1, 'Current password is required'),
     newPassword: z.string().min(6, 'New password must be at least 6 characters')
@@ -172,6 +179,7 @@ export const validateRegister = validateBody(registerSchema)
 export const validateUpdateUser = validateBody(updateUserSchema)
 export const validateUpdateUserNotes = validateBody(updateUserNotesSchema)
 export const validateUpdateBookingLimit = validateBody(updateBookingLimitSchema)
+export const validateRecordPayment = validateBody(recordPaymentSchema)
 export const validateChangePassword = validateBody(changePasswordSchema)
 export const validateCreateBooking = validateBody(createBookingSchema)
 export const validateUpdateBooking = validateBody(updateBookingSchema)

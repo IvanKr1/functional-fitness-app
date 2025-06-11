@@ -19,6 +19,12 @@ router.post('/login',
     asyncHandler(authController.login)
 )
 
+// POST /auth/dev-token - Get development token (development only)
+router.post('/dev-token',
+    validateLogin,
+    asyncHandler(authController.getDevToken)
+)
+
 // POST /auth/logout - User logout
 router.post('/logout',
     asyncHandler(authController.logout)

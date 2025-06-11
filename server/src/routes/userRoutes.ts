@@ -5,7 +5,8 @@ import {
     validateRegister,
     validateUpdateUser,
     validateUpdateUserNotes,
-    validateUpdateBookingLimit
+    validateUpdateBookingLimit,
+    validateRecordPayment
 } from '../middleware/validation.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
 
@@ -36,8 +37,8 @@ router.get('/:id',
     asyncHandler(userController.getUserById)
 )
 
-// PUT /users/:id - Update user
-router.put('/:id',
+// PATCH /users/:id - Update user
+router.patch('/:id',
     authenticateToken,
     validateUpdateUser,
     asyncHandler(userController.updateUser)
@@ -56,6 +57,20 @@ router.patch('/:id/booking-limit',
     requireAdmin,
     validateUpdateBookingLimit,
     asyncHandler(userController.updateUserBookingLimit)
+)
+
+// PATCH /users/:id/payment - Record payment (admin only)
+router.patch('/:id/payment',
+    authenticateToken,
+    requireAdmin,
+    validateRecordPayment,
+    asyncHandler(userController.recordPayment)
+)
+
+// GET /users/:id/payments - Get payment history
+router.get('/:id/payments',
+    authenticateToken,
+    asyncHandler(userController.getUserPaymentHistory)
 )
 
 // DELETE /users/:id - Delete user (admin only)
