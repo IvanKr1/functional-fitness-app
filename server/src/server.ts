@@ -14,6 +14,7 @@ import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import bookingRoutes from './routes/bookingRoutes.js'
 import attendanceRoutes from './routes/attendanceRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
 
 const app = express()
 
@@ -117,8 +118,7 @@ app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
 app.use('/api/bookings', bookingRoutes)
 app.use('/api/attendance', attendanceRoutes)
-// TODO: Add other routes when created
-// app.use('/api/payments', paymentRoutes)
+app.use('/api/payments', paymentRoutes)
 
 /**
  * 404 handler for undefined routes
