@@ -10,17 +10,6 @@ import {
     LoginRequest
 } from '../types/index.js'
 
-/**
- * Generate a random 7-character password for new users
- */
-const generateRandomPassword = (): string => {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-    let password = ''
-    for (let i = 0; i < 7; i++) {
-        password += chars.charAt(Math.floor(Math.random() * chars.length))
-    }
-    return password
-}
 
 /**
  * Hash password using bcrypt
@@ -52,7 +41,7 @@ const generateToken = (userId: string, email: string, role: Role): string => {
     }
 
     const options: SignOptions = {
-        expiresIn: jwtConfig.expiresIn as string
+        expiresIn: jwtConfig.expiresIn as any
     }
 
     return jwt.sign(payload, jwtConfig.secret, options)
@@ -170,4 +159,23 @@ export const verifyToken = async (token: string): Promise<{
         }
         throw error
     }
+}
+
+/**
+ * Generate a long-lasting development token (1 year expiration)
+ * Only for development/testing purposes
+ */
+export const generateDevToken = async (userId: string, email: string, role: Role): Promise<string> => {
+    const payload: JWTPayload = {
+        userId,
+        email,
+        role
+    }
+
+    if (!jwtConfig.secret) {
+        throw new Error('JWT secret is not configured')
+    }
+
+    // Generate token with 1 year expiration for development
+    return jwt.sign(payload, jwtConfig.secret, { expiresIn: '365d' as any })
 } 

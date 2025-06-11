@@ -442,4 +442,128 @@ export const getUserStats = async (userId: string): Promise<{
         currentWeekBookings,
         weeklyBookingLimit: user.weeklyBookingLimit
     }
+}
+
+/**
+ * Record user payment and automatically set next due date (30 days later)
+ * Creates PaymentRecord entry and updates User fields
+ * Admin only function
+ */
+export const recordPayment = async (
+    userId: string,
+    paymentDate?: string,
+    amount: number = 50.00,
+    currency: string = 'EUR',
+    notes?: string
+): Promise<{
+    paymentRecord: {
+        id: string
+        amount: number
+        currency: string
+        paymentDate: Date
+        dueDate: Date
+        status: string
+        notes?: string | null
+    }
+    lastPaymentDate: Date
+    nextPaymentDueDate: Date
+}> => {
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    })
+
+    if (!user) {
+        throw new ValidationError('User not found')
+    }
+
+    // Use provided date or current date
+    const lastPaymentDate = paymentDate ? new Date(paymentDate) : new Date()
+
+    // Calculate next due date (30 days from payment)
+    const nextPaymentDueDate = new Date(lastPaymentDate)
+    nextPaymentDueDate.setDate(nextPaymentDueDate.getDate() + 30)
+
+    // 1. Create PaymentRecord entry for detailed tracking
+    const paymentRecord = await prisma.paymentRecord.create({
+        data: {
+            userId,
+            amount,
+            currency,
+            paymentDate: lastPaymentDate,
+            dueDate: nextPaymentDueDate,
+            status: 'PAID',
+            notes: notes || 'Monthly membership fee'
+        }
+    })
+
+    // 2. Update User fields for quick access (derived from PaymentRecord)
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            lastPaymentDate,
+            nextPaymentDueDate
+        }
+    })
+
+    return {
+        paymentRecord: {
+            id: paymentRecord.id,
+            amount: Number(paymentRecord.amount),
+            currency: paymentRecord.currency,
+            paymentDate: paymentRecord.paymentDate,
+            dueDate: paymentRecord.dueDate,
+            status: paymentRecord.status,
+            notes: paymentRecord.notes || null
+        },
+        lastPaymentDate,
+        nextPaymentDueDate
+    }
+}
+
+/**
+ * Get user payment history
+ * Admin only or user viewing their own history
+ */
+export const getUserPaymentHistory = async (
+    userId: string,
+    requestingUserId: string,
+    requestingUserRole: Role
+): Promise<Array<{
+    id: string
+    amount: number
+    currency: string
+    paymentDate: Date
+    dueDate: Date
+    status: string
+    notes?: string | null
+    createdAt: Date
+}>> => {
+    // Users can only view their own payment history, admins can view any
+    if (requestingUserRole !== Role.ADMIN && userId !== requestingUserId) {
+        throw new AuthorizationError('You can only view your own payment history')
+    }
+
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    })
+
+    if (!user) {
+        throw new ValidationError('User not found')
+    }
+
+    const paymentRecords = await prisma.paymentRecord.findMany({
+        where: { userId },
+        orderBy: { paymentDate: 'desc' }
+    })
+
+    return paymentRecords.map(record => ({
+        id: record.id,
+        amount: Number(record.amount),
+        currency: record.currency,
+        paymentDate: record.paymentDate,
+        dueDate: record.dueDate,
+        status: record.status,
+        notes: record.notes || null,
+        createdAt: record.createdAt
+    }))
 } 
