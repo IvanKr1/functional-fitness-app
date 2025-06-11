@@ -1,0 +1,99 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  USER
+}
+
+model User {
+  id                    String    @id @default(cuid())
+  name                  String
+  email                 String    @unique
+  mobilePhone           String?
+  passwordHash          String
+  role                  Role      @default(USER)
+  notes                 String?   // Optional injury/health notes
+  weeklyBookingLimit    Int       @default(3) // Configurable by admin
+  lastPaymentDate       DateTime?
+  nextPaymentDueDate    DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  // Relations
+  bookings              Booking[]
+  attendanceRecords     AttendanceRecord[]
+
+  @@map("users")
+}
+
+model Booking {
+  id          String   @id @default(cuid())
+  userId      String
+  startTime   DateTime
+  endTime     DateTime
+  status      BookingStatus @default(CONFIRMED)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attendance  AttendanceRecord?
+
+  @@map("bookings")
+}
+
+enum BookingStatus {
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+model AttendanceRecord {
+  id        String   @id @default(cuid())
+  userId    String
+  bookingId String   @unique
+  attended  Boolean  @default(false)
+  checkedInAt DateTime?
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  booking   Booking  @relation(fields: [bookingId], references: [id], onDelete: Cascade)
+
+  @@map("attendance_records")
+}
+
+model PaymentRecord {
+  id          String   @id @default(cuid())
+  userId      String
+  amount      Decimal
+  currency    String   @default("EUR")
+  paymentDate DateTime
+  dueDate     DateTime
+  status      PaymentStatus @default(PENDING)
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payment_records")
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+} 
