@@ -12,6 +12,7 @@ import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 // Import routes
 import authRoutes from './routes/authRoutes.js'
 import userRoutes from './routes/userRoutes.js'
+import bookingRoutes from './routes/bookingRoutes.js'
 
 const app = express()
 
@@ -113,8 +114,8 @@ app.get('/api', (req, res) => {
  */
 app.use('/api/auth', authRoutes)
 app.use('/api/users', userRoutes)
+app.use('/api/bookings', bookingRoutes)
 // TODO: Add other routes when created
-// app.use('/api/bookings', bookingRoutes)
 // app.use('/api/attendance', attendanceRoutes)
 // app.use('/api/payments', paymentRoutes)
 
