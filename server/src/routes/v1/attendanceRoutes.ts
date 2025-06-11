@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import * as attendanceController from '../controllers/attendanceController.js'
-import { authenticateToken } from '../middleware/auth.js'
+import * as attendanceController from '../../controllers/attendanceController.js'
+import { authenticateToken } from '../../middleware/auth.js'
 import {
     validateCreateAttendance,
     validateUpdateAttendance,
     validateAttendanceQuery
-} from '../middleware/validation.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
+} from '../../middleware/validation.js'
+import { asyncHandler } from '../../middleware/errorHandler.js'
 
 const router = Router()
 

@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import * as authController from '../controllers/authController.js'
-import { authenticateToken, requireAdmin } from '../middleware/auth.js'
+import * as authController from '../../controllers/authController.js'
+import { authenticateToken, requireAdmin } from '../../middleware/auth.js'
 import {
     validateLogin,
     validateChangePassword
-} from '../middleware/validation.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
+} from '../../middleware/validation.js'
+import { asyncHandler } from '../../middleware/errorHandler.js'
 
 const router = Router()
 

@@ -9,12 +9,8 @@ import { config, corsConfig, rateLimitConfig } from './config/index.js'
 import { testDatabaseConnection, disconnectDatabase } from './config/database.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
 
-// Import routes
-import authRoutes from './routes/authRoutes.js'
-import userRoutes from './routes/userRoutes.js'
-import bookingRoutes from './routes/bookingRoutes.js'
-import attendanceRoutes from './routes/attendanceRoutes.js'
-import paymentRoutes from './routes/paymentRoutes.js'
+// Import versioned routes
+import apiRoutes from './routes/index.js'
 
 const app = express()
 
@@ -95,17 +91,29 @@ app.get('/health', async (req, res) => {
 app.get('/api', (req, res) => {
     res.status(200).json({
         success: true,
-        message: 'Gym Booking API v1.0',
+        message: 'Gym Booking API',
         data: {
             version: '1.0.0',
             environment: config.NODE_ENV,
             documentation: '/api/docs', // Future API documentation endpoint
+            supportedVersions: ['v1'],
+            defaultVersion: 'v1',
             endpoints: {
-                auth: '/api/auth',
-                users: '/api/users',
-                bookings: '/api/bookings',
-                attendance: '/api/attendance',
-                payments: '/api/payments'
+                v1: {
+                    auth: '/api/v1/auth',
+                    users: '/api/v1/users',
+                    bookings: '/api/v1/bookings',
+                    attendance: '/api/v1/attendance',
+                    payments: '/api/v1/payments'
+                },
+                // Backward compatibility (no version specified defaults to v1)
+                legacy: {
+                    auth: '/api/auth',
+                    users: '/api/users',
+                    bookings: '/api/bookings',
+                    attendance: '/api/attendance',
+                    payments: '/api/payments'
+                }
             }
         }
     })
@@ -113,12 +121,9 @@ app.get('/api', (req, res) => {
 
 /**
  * API Routes
+ * All routes are now versioned and handled by the versioned router
  */
-app.use('/api/auth', authRoutes)
-app.use('/api/users', userRoutes)
-app.use('/api/bookings', bookingRoutes)
-app.use('/api/attendance', attendanceRoutes)
-app.use('/api/payments', paymentRoutes)
+app.use('/api', apiRoutes)
 
 /**
  * 404 handler for undefined routes
