@@ -1,11 +1,94 @@
+import bcrypt from 'bcryptjs'
 import { Role } from '@prisma/client'
 import { prisma } from '../config/database.js'
 import {
     ValidationError,
     AuthorizationError,
     UpdateUserRequest,
-    UpdateUserNotesRequest
+    UpdateUserNotesRequest,
+    RegisterRequest
 } from '../types/index.js'
+
+/**
+ * Generate a random 7-character password for new users
+ */
+const generateRandomPassword = (): string => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let password = ''
+    for (let i = 0; i < 7; i++) {
+        password += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return password
+}
+
+/**
+ * Hash password using bcrypt
+ */
+const hashPassword = async (password: string): Promise<string> => {
+    const saltRounds = 12
+    return await bcrypt.hash(password, saltRounds)
+}
+
+/**
+ * Register a new user (admin only)
+ * Returns the generated password and user data
+ */
+export const registerUser = async (userData: RegisterRequest): Promise<{
+    user: {
+        id: string
+        name: string
+        email: string
+        role: Role
+        mobilePhone?: string
+        weeklyBookingLimit: number
+    }
+    generatedPassword: string
+}> => {
+    const {
+        name,
+        email,
+        mobilePhone,
+        role = Role.USER,
+        weeklyBookingLimit = 2
+    } = userData
+
+    // Check if user already exists
+    const existingUser = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+    })
+
+    if (existingUser) {
+        throw new ValidationError('User with this email already exists', 'email')
+    }
+
+    // Generate random password
+    const generatedPassword = generateRandomPassword()
+    const passwordHash = await hashPassword(generatedPassword)
+
+    // Create user
+    const user = await prisma.user.create({
+        data: {
+            name,
+            email: email.toLowerCase(),
+            mobilePhone: mobilePhone || null,
+            passwordHash,
+            role,
+            weeklyBookingLimit
+        }
+    })
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role,
+            ...(user.mobilePhone && { mobilePhone: user.mobilePhone }),
+            weeklyBookingLimit: user.weeklyBookingLimit
+        },
+        generatedPassword
+    }
+}
 
 /**
  * Get all users (admin only)

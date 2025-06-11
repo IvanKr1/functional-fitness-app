@@ -36,36 +36,6 @@ export const login = async (
 }
 
 /**
- * User registration endpoint (admin only)
- */
-export const register = async (
-    req: AuthenticatedRequest,
-    res: Response
-): Promise<void> => {
-    try {
-        const { user, generatedPassword } = await authService.registerUser(req.body)
-
-        const response: ApiResponse = {
-            success: true,
-            data: {
-                user,
-                generatedPassword,
-                message: 'User registered successfully'
-            }
-        }
-
-        res.status(201).json(response)
-    } catch (error) {
-        const response: ApiResponse = {
-            success: false,
-            error: error instanceof Error ? error.message : 'Registration failed'
-        }
-
-        res.status(400).json(response)
-    }
-}
-
-/**
  * User logout endpoint
  */
 export const logout = async (

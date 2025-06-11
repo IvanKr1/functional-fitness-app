@@ -3,7 +3,6 @@ import * as authController from '../controllers/authController.js'
 import { authenticateToken, requireAdmin } from '../middleware/auth.js'
 import {
     validateLogin,
-    validateRegister,
     validateChangePassword
 } from '../middleware/validation.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
@@ -18,14 +17,6 @@ const router = Router()
 router.post('/login',
     validateLogin,
     asyncHandler(authController.login)
-)
-
-// POST /auth/register - User registration (admin only)
-router.post('/register',
-    authenticateToken,
-    requireAdmin,
-    validateRegister,
-    asyncHandler(authController.register)
 )
 
 // POST /auth/logout - User logout

@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import jwt from 'jsonwebtoken'
+import jwt, { SignOptions } from 'jsonwebtoken'
 import { Role } from '@prisma/client'
 import { prisma } from '../config/database.js'
 import { jwtConfig } from '../config/index.js'
@@ -7,8 +7,7 @@ import {
     AuthenticationError,
     ValidationError,
     JWTPayload,
-    LoginRequest,
-    RegisterRequest
+    LoginRequest
 } from '../types/index.js'
 
 /**
@@ -52,11 +51,11 @@ const generateToken = (userId: string, email: string, role: Role): string => {
         throw new Error('JWT secret is not configured')
     }
 
-    const options = {
-        expiresIn: jwtConfig.expiresIn || '24h'
+    const options: SignOptions = {
+        expiresIn: jwtConfig.expiresIn as string
     }
 
-    return jwt.sign(payload, jwtConfig.secret as string, options)
+    return jwt.sign(payload, jwtConfig.secret, options)
 }
 
 /**
@@ -100,67 +99,6 @@ export const loginUser = async (credentials: LoginRequest): Promise<{
             role: user.role
         },
         token
-    }
-}
-
-/**
- * Register a new user (admin only)
- * Returns the generated password and user data
- */
-export const registerUser = async (userData: RegisterRequest): Promise<{
-    user: {
-        id: string
-        name: string
-        email: string
-        role: Role
-        mobilePhone?: string
-        weeklyBookingLimit: number
-    }
-    generatedPassword: string
-}> => {
-    const {
-        name,
-        email,
-        mobilePhone,
-        role = Role.USER,
-        weeklyBookingLimit = 2
-    } = userData
-
-    // Check if user already exists
-    const existingUser = await prisma.user.findUnique({
-        where: { email: email.toLowerCase() }
-    })
-
-    if (existingUser) {
-        throw new ValidationError('User with this email already exists', 'email')
-    }
-
-    // Generate random password
-    const generatedPassword = generateRandomPassword()
-    const passwordHash = await hashPassword(generatedPassword)
-
-    // Create user
-    const user = await prisma.user.create({
-        data: {
-            name,
-            email: email.toLowerCase(),
-            mobilePhone: mobilePhone || null,
-            passwordHash,
-            role,
-            weeklyBookingLimit
-        }
-    })
-
-    return {
-        user: {
-            id: user.id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            ...(user.mobilePhone && { mobilePhone: user.mobilePhone }),
-            weeklyBookingLimit: user.weeklyBookingLimit
-        },
-        generatedPassword
     }
 }
 
