@@ -1,12 +1,12 @@
 import { Router } from 'express'
-import * as bookingController from '../controllers/bookingController.js'
-import { authenticateToken, requireAdmin } from '../middleware/auth.js'
+import * as bookingController from '../../controllers/bookingController.js'
+import { authenticateToken, requireAdmin } from '../../middleware/auth.js'
 import {
     validateCreateBooking,
     validateUpdateBooking,
     validateWeekCountQuery
-} from '../middleware/validation.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
+} from '../../middleware/validation.js'
+import { asyncHandler } from '../../middleware/errorHandler.js'
 
 const router = Router()
 

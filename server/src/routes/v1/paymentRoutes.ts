@@ -1,11 +1,11 @@
 import { Router } from 'express'
-import * as paymentController from '../controllers/paymentController.js'
-import { authenticateToken, requireAdmin } from '../middleware/auth.js'
+import * as paymentController from '../../controllers/paymentController.js'
+import { authenticateToken, requireAdmin } from '../../middleware/auth.js'
 import {
     validateRecordPayment,
     validatePaymentStatusQuery
-} from '../middleware/validation.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
+} from '../../middleware/validation.js'
+import { asyncHandler } from '../../middleware/errorHandler.js'
 
 const router = Router()
 
