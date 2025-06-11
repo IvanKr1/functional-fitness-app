@@ -172,6 +172,20 @@ export const paymentStatusQuerySchema = z.object({
 })
 
 /**
+ * Attendance schemas
+ */
+export const createAttendanceSchema = z.object({
+    bookingId: z.string().min(1, 'Booking ID is required'),
+    attended: z.boolean().default(false),
+    notes: z.string().max(500, 'Notes too long').optional()
+})
+
+export const updateAttendanceSchema = z.object({
+    attended: z.boolean().optional(),
+    notes: z.string().max(500, 'Notes too long').optional()
+})
+
+/**
  * Validation middleware instances
  */
 export const validateLogin = validateBody(loginSchema)
@@ -186,4 +200,6 @@ export const validateUpdateBooking = validateBody(updateBookingSchema)
 
 export const validateWeekCountQuery = validateQuery(weekCountQuerySchema)
 export const validateAttendanceQuery = validateQuery(attendanceQuerySchema)
-export const validatePaymentStatusQuery = validateQuery(paymentStatusQuerySchema) 
+export const validatePaymentStatusQuery = validateQuery(paymentStatusQuerySchema)
+export const validateCreateAttendance = validateBody(createAttendanceSchema)
+export const validateUpdateAttendance = validateBody(updateAttendanceSchema) 
