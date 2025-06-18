@@ -1,5 +1,5 @@
 import { Response } from 'express'
-import { AuthenticatedRequest, ApiResponse } from '../types/index.js'
+import { AuthenticatedRequest, ApiResponse, AuthenticationError } from '../types/index.js'
 import * as authService from '../services/authService.js'
 import { cookieConfig, isDevelopment } from '../config/index.js'
 
@@ -12,9 +12,16 @@ export const login = async (
 ): Promise<void> => {
     try {
         const { user, token } = await authService.loginUser(req.body)
+        const tokenExpiresIn = process.env.JWT_LIFE_HOURS ?? "24"
+        const cookieDomain = process.env.COOKIE_DOMAIN ?? "localhost"
 
-        // Set HTTP-only cookie
-        res.cookie('token', token, cookieConfig.options)
+        res.cookie("JWT", token, {
+            httpOnly: true,
+            maxAge: parseInt(tokenExpiresIn) * 3600000,
+            secure: true,
+            domain: cookieDomain,
+            sameSite: "strict",
+        })
 
         const response: ApiResponse = {
             success: true,
@@ -205,39 +212,25 @@ export const refreshToken = async (
 }
 
 /**
- * Get development token endpoint (development only)
- * Returns a long-lasting token for development/testing purposes
+ * Get development token endpoint
+ * Returns a token valid for 7 days for testing purposes
+ * Only available to administrators
  */
 export const getDevToken = async (
     req: AuthenticatedRequest,
     res: Response
 ): Promise<void> => {
     try {
-        // Only allow in development mode
-        if (!isDevelopment()) {
-            const response: ApiResponse = {
-                success: false,
-                error: 'Development tokens are only available in development mode'
-            }
-            res.status(403).json(response)
-            return
-        }
-
-        const { email, password } = req.body
-
-        // Get user data first
-        const { user } = await authService.loginUser({ email, password })
-
-        // Generate a long-lasting token (1 year)
-        const devToken = await authService.generateDevToken(user.id, user.email, user.role)
+        const { user, token } = await authService.generateDevToken(req.body)
 
         const response: ApiResponse = {
             success: true,
             data: {
                 user,
-                token: devToken,
-                message: 'Development token generated (expires in 1 year)',
-                usage: 'Use this token in Authorization header: Bearer ' + devToken
+                token,
+                message: 'Development token generated (expires in 7 days)',
+                usage: 'Use this token in Authorization header: Bearer ' + token,
+                note: 'This token is for development/testing purposes only'
             }
         }
 
@@ -248,6 +241,8 @@ export const getDevToken = async (
             error: error instanceof Error ? error.message : 'Failed to generate development token'
         }
 
-        res.status(401).json(response)
+        // If it's an authentication error, return 401, otherwise 403
+        const statusCode = error instanceof AuthenticationError ? 401 : 403
+        res.status(statusCode).json(response)
     }
 } 

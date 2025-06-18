@@ -17,11 +17,12 @@ const configSchema = z.object({
     DATABASE_URL: z.string().min(1, 'Database URL is required'),
 
     // JWT configuration
-    JWT_SECRET: z.string().min(32, 'JWT secret must be at least 32 characters'),
-    JWT_EXPIRES_IN: z.string().default('7d'),
+    JWT_SECRET: z.string().min(12, 'JWT secret must be at least 12 characters'),
+    JWT_LIFE_HOURS: z.string().default('24'),
 
     // Cookie configuration
-    COOKIE_SECRET: z.string().min(32, 'Cookie secret must be at least 32 characters'),
+    COOKIE_SECRET: z.string().min(12, 'Cookie secret must be at least 12 characters'),
+    COOKIE_DOMAIN: z.string().default('localhost'),
 
     // Admin credentials for seeding
     ADMIN_EMAIL: z.string().email().default('admin@gym.com'),
@@ -89,7 +90,7 @@ export const dbConfig = {
  */
 export const jwtConfig = {
     secret: config.JWT_SECRET,
-    expiresIn: config.JWT_EXPIRES_IN
+    expiresIn: config.JWT_LIFE_HOURS + 'h'
 }
 
 /**
@@ -97,11 +98,12 @@ export const jwtConfig = {
  */
 export const cookieConfig = {
     secret: config.COOKIE_SECRET,
+    domain: config.COOKIE_DOMAIN,
     options: {
         httpOnly: true,
         secure: isProduction(),
         sameSite: 'strict' as const,
-        maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days in milliseconds
+        maxAge: parseInt(config.JWT_LIFE_HOURS) * 3600000 // Convert hours to milliseconds
     }
 }
 

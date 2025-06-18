@@ -19,7 +19,7 @@ router.post('/login',
     asyncHandler(authController.login)
 )
 
-// POST /auth/dev-token - Get development token (development only)
+// POST /auth/dev-token - Get development token (7 days)
 router.post('/dev-token',
     validateLogin,
     asyncHandler(authController.getDevToken)

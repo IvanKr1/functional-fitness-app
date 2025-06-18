@@ -30,21 +30,20 @@ const comparePassword = async (password: string, hash: string): Promise<boolean>
  * Generate JWT token for user
  */
 const generateToken = (userId: string, email: string, role: Role): string => {
+    const tokenExpiresIn = process.env.JWT_LIFE_HOURS ?? "24"
+
     const payload: JWTPayload = {
         userId,
         email,
         role
     }
 
-    if (!jwtConfig.secret) {
-        throw new Error('JWT secret is not configured')
-    }
+    const accessToken = jwt.sign(payload, process.env.JWT_SECRET ?? "", {
+        algorithm: "HS256",
+        expiresIn: Number(tokenExpiresIn),
+    });
 
-    const options: SignOptions = {
-        expiresIn: jwtConfig.expiresIn as any
-    }
-
-    return jwt.sign(payload, jwtConfig.secret, options)
+    return accessToken;
 }
 
 /**
@@ -79,6 +78,7 @@ export const loginUser = async (credentials: LoginRequest): Promise<{
 
     // Generate token
     const token = generateToken(user.id, user.email, user.role)
+    console.log('token', token)
 
     return {
         user: {
@@ -162,20 +162,59 @@ export const verifyToken = async (token: string): Promise<{
 }
 
 /**
- * Generate a long-lasting development token (1 year expiration)
+ * Generate a long-lasting development token (7 days)
  * Only for development/testing purposes
+ * Only admins can generate this token
  */
-export const generateDevToken = async (userId: string, email: string, role: Role): Promise<string> => {
-    const payload: JWTPayload = {
-        userId,
-        email,
-        role
+export const generateDevToken = async (credentials: LoginRequest): Promise<{
+    user: {
+        id: string
+        name: string
+        email: string
+        role: Role
+    }
+    token: string
+}> => {
+    const { email, password } = credentials
+
+    // Find user by email
+    const user = await prisma.user.findUnique({
+        where: { email: email.toLowerCase() }
+    })
+
+    if (!user) {
+        throw new AuthenticationError('Invalid email or password')
     }
 
-    if (!jwtConfig.secret) {
-        throw new Error('JWT secret is not configured')
+    // Verify password
+    const isValidPassword = await comparePassword(password, user.passwordHash)
+
+    if (!isValidPassword) {
+        throw new AuthenticationError('Invalid email or password')
     }
 
-    // Generate token with 1 year expiration for development
-    return jwt.sign(payload, jwtConfig.secret, { expiresIn: '365d' as any })
+    // Check if user is admin
+    if (user.role !== 'ADMIN') {
+        throw new AuthenticationError('Only administrators can generate development tokens')
+    }
+
+    // Generate token with 7 days expiration
+    const token = jwt.sign(
+        { userId: user.id, email: user.email, role: user.role },
+        process.env.JWT_SECRET ?? "",
+        {
+            algorithm: "HS256",
+            expiresIn: "7d"
+        }
+    );
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        },
+        token
+    }
 } 
