@@ -2,7 +2,7 @@ export interface User {
     id: string;
     email: string;
     name: string;
-    role: 'admin' | 'user';
+    role: 'ADMIN' | 'USER';
 }
 
 export interface Booking {
@@ -27,3 +27,15 @@ export interface DaySchedule {
 }
 
 export type ViewMode = 'daily' | 'weekly' | 'monthly';
+
+export interface AuthState {
+    user: User | null;
+    isAuthenticated: boolean;
+    isLoading: boolean;
+    error: string | null;
+}
+
+export interface LoginFormData {
+    email: string;
+    password: string;
+}

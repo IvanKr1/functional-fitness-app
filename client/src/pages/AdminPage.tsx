@@ -10,7 +10,7 @@ export function AdminPage() {
     return <Navigate to="/login" />
   }
   
-  if (currentUser.role !== 'admin') {
+  if (currentUser.role !== 'ADMIN') {
     return <Navigate to="/" />
   }
 

@@ -14,7 +14,7 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     const { currentUser } = useStore();
     
-    if (currentUser?.role === 'admin') {
+    if (currentUser?.role === 'ADMIN') {
         return <AdminLayout>{children}</AdminLayout>;
     }
     

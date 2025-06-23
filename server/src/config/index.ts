@@ -123,7 +123,39 @@ export const rateLimitConfig = {
  * CORS configuration
  */
 export const corsConfig = {
-    origin: config.FRONTEND_URL,
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+        // Allow requests with no origin (like mobile apps or curl requests)
+        if (!origin) {
+            return callback(null, true)
+        }
+
+        // Normalize the expected frontend URL by removing trailing slash
+        const normalizedFrontendUrl = config.FRONTEND_URL.replace(/\/$/, '')
+
+        // Normalize the incoming origin by removing trailing slash
+        const normalizedOrigin = origin.replace(/\/$/, '')
+
+        // Check if the normalized origin matches our frontend URL
+        if (normalizedOrigin === normalizedFrontendUrl) {
+            return callback(null, true)
+        }
+
+        // In development, also allow localhost variations
+        if (config.NODE_ENV === 'development') {
+            const localhostPatterns = [
+                'http://localhost:5173',
+                'http://127.0.0.1:5173',
+                'http://localhost:3000',
+                'http://127.0.0.1:3000'
+            ]
+
+            if (localhostPatterns.includes(normalizedOrigin)) {
+                return callback(null, true)
+            }
+        }
+
+        callback(new Error('Not allowed by CORS'))
+    },
     credentials: true,
     optionsSuccessStatus: 200
 } 
