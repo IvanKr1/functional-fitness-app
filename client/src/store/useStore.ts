@@ -126,9 +126,7 @@ export const useStore = create<AppState>()(
         {
             name: 'gym-booking-storage',
             partialize: (state) => ({
-                user: state.user,
-                currentUser: state.currentUser,
-                isAuthenticated: state.isAuthenticated,
+                // Don't persist authentication state - always check fresh
                 bookings: state.bookings,
                 schedules: state.schedules
             })

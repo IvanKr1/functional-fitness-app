@@ -30,20 +30,13 @@ const comparePassword = async (password: string, hash: string): Promise<boolean>
  * Generate JWT token for user
  */
 const generateToken = (userId: string, email: string, role: Role): string => {
-    const tokenExpiresIn = process.env.JWT_LIFE_HOURS ?? "24"
-
     const payload: JWTPayload = {
         userId,
         email,
         role
     }
 
-    const accessToken = jwt.sign(payload, process.env.JWT_SECRET ?? "", {
-        algorithm: "HS256",
-        expiresIn: Number(tokenExpiresIn),
-    });
-
-    return accessToken;
+    return jwt.sign(payload, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
 }
 
 /**
@@ -201,11 +194,8 @@ export const generateDevToken = async (credentials: LoginRequest): Promise<{
     // Generate token with 7 days expiration
     const token = jwt.sign(
         { userId: user.id, email: user.email, role: user.role },
-        process.env.JWT_SECRET ?? "",
-        {
-            algorithm: "HS256",
-            expiresIn: "7d"
-        }
+        jwtConfig.secret,
+        { expiresIn: '7d' }
     );
 
     return {
