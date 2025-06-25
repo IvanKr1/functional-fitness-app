@@ -1,20 +1,44 @@
+import { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { AdminLayout } from './layouts/AdminLayout';
 import { LoginPage } from './pages/LoginPage';
 import { AdminPage } from './pages/AdminPage';
+import { UserManagementPage } from './pages/UserManagementPage';
 import { BookingScheduler } from './components/Booking/BookingScheduler';
 import { useStore } from './store/useStore';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-    const { currentUser } = useStore();
+    const { currentUser, isAuthenticated, getProfile, isLoading, error, clearError } = useStore();
+    
+    useEffect(() => {
+        // Only check authentication if not already authenticated and not on login page
+        if (!isAuthenticated && !isLoading) {
+            getProfile();
+        }
+        // Clear error if on login page
+        return () => {
+            if (window.location.pathname === '/login') {
+                clearError();
+            }
+        };
+    }, [isAuthenticated, isLoading, getProfile, clearError]);
+    
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-screen">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+            </div>
+        );
+    }
+    
     return currentUser ? <>{children}</> : <Navigate to="/login" />;
 };
 
 const ConditionalLayout = ({ children }: { children: React.ReactNode }) => {
     const { currentUser } = useStore();
     
-    if (currentUser?.role === 'admin') {
+    if (currentUser?.role === 'ADMIN') {
         return <AdminLayout>{children}</AdminLayout>;
     }
     
@@ -35,6 +59,7 @@ export const App = () => {
                                     <Route path="/" element={<AdminPage />} />
                                     <Route path="/bookings/all" element={<AdminPage />} />
                                     <Route path="/bookings/active" element={<AdminPage />} />
+                                    <Route path="/users" element={<UserManagementPage />} />
                                     <Route path="/settings" element={<div>Settings Page</div>} />
                                 </Routes>
                             </AdminLayout>

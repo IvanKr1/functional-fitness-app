@@ -1,36 +1,56 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Button,
     Card,
     CardContent,
-    FormControlLabel,
-    Switch,
     TextField,
     Typography,
+    Alert,
+    CircularProgress,
 } from '@mui/material';
 import { useStore } from '../store/useStore';
 
 export const LoginPage = () => {
     const navigate = useNavigate();
-    const { setCurrentUser } = useStore();
-    const [isAdmin, setIsAdmin] = useState(false);
+    const { login, currentUser, isAuthenticated, isLoading, error, clearError } = useStore();
+    const [formData, setFormData] = useState({
+        email: '',
+        password: ''
+    });
 
-    const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    // Redirect if already authenticated
+    useEffect(() => {
+        if (isAuthenticated && currentUser) {
+            navigate(currentUser.role === 'ADMIN' ? '/admin' : '/');
+        }
+    }, [isAuthenticated, currentUser, navigate]);
+
+    // Clear error when component mounts
+    useEffect(() => {
+        clearError();
+    }, [clearError]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({
+            ...prev,
+            [name]: value
+        }));
+    };
+
+    const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        const formData = new FormData(event.currentTarget);
-        const email = formData.get('email') as string;
-        const name = formData.get('name') as string;
+        
+        if (!formData.email || !formData.password) {
+            return;
+        }
 
-        setCurrentUser({
-            id: Math.random().toString(36).substr(2, 9),
-            email,
-            name,
-            role: isAdmin ? 'admin' : 'user',
+        await login({
+            email: formData.email,
+            password: formData.password
         });
-
-        navigate('/');
     };
 
     return (
@@ -40,13 +60,21 @@ export const LoginPage = () => {
                 justifyContent: 'center',
                 alignItems: 'center',
                 minHeight: '100vh',
+                padding: 2
             }}
         >
             <Card sx={{ maxWidth: 400, width: '100%' }}>
                 <CardContent>
-                    <Typography variant="h5" component="h1" gutterBottom>
+                    <Typography variant="h5" component="h1" gutterBottom align="center">
                         Login
                     </Typography>
+                    
+                    {error && (
+                        <Alert severity="error" sx={{ mb: 2 }}>
+                            {error}
+                        </Alert>
+                    )}
+
                     <form onSubmit={handleSubmit}>
                         <TextField
                             margin="normal"
@@ -55,30 +83,38 @@ export const LoginPage = () => {
                             id="email"
                             label="Email Address"
                             name="email"
+                            type="email"
                             autoComplete="email"
                             autoFocus
+                            value={formData.email}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
                         />
                         <TextField
                             margin="normal"
                             required
                             fullWidth
-                            id="name"
-                            label="Full Name"
-                            name="name"
-                            autoComplete="name"
+                            id="password"
+                            label="Password"
+                            name="password"
+                            type="password"
+                            autoComplete="current-password"
+                            value={formData.password}
+                            onChange={handleInputChange}
+                            disabled={isLoading}
                         />
-                        <FormControlLabel
-                            control={
-                                <Switch
-                                    checked={isAdmin}
-                                    onChange={(e) => setIsAdmin(e.target.checked)}
-                                />
-                            }
-                            label="Login as Admin"
-                            sx={{ mt: 2 }}
-                        />
-                        <Button type="submit" fullWidth variant="contained" sx={{ mt: 3, mb: 2 }}>
-                            Sign In
+                        <Button 
+                            type="submit" 
+                            fullWidth 
+                            variant="contained" 
+                            sx={{ mt: 3, mb: 2 }}
+                            disabled={isLoading || !formData.email || !formData.password}
+                        >
+                            {isLoading ? (
+                                <CircularProgress size={24} color="inherit" />
+                            ) : (
+                                'Sign In'
+                            )}
                         </Button>
                     </form>
                 </CardContent>

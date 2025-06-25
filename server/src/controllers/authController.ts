@@ -12,16 +12,8 @@ export const login = async (
 ): Promise<void> => {
     try {
         const { user, token } = await authService.loginUser(req.body)
-        const tokenExpiresIn = process.env.JWT_LIFE_HOURS ?? "24"
-        const cookieDomain = process.env.COOKIE_DOMAIN ?? "localhost"
 
-        res.cookie("JWT", token, {
-            httpOnly: true,
-            maxAge: parseInt(tokenExpiresIn) * 3600000,
-            secure: true,
-            domain: cookieDomain,
-            sameSite: "strict",
-        })
+        res.cookie("token", token, cookieConfig.options)
 
         const response: ApiResponse = {
             success: true,
@@ -51,11 +43,7 @@ export const logout = async (
 ): Promise<void> => {
     try {
         // Clear the authentication cookie
-        res.clearCookie('token', {
-            httpOnly: true,
-            secure: cookieConfig.options.secure,
-            sameSite: cookieConfig.options.sameSite
-        })
+        res.clearCookie('token', cookieConfig.options)
 
         const response: ApiResponse = {
             success: true,
@@ -129,22 +117,10 @@ export const getProfile = async (
             return
         }
 
-        // Get fresh user data from database
-        const token = req.cookies?.token
-        if (!token) {
-            const response: ApiResponse = {
-                success: false,
-                error: 'No authentication token'
-            }
-            res.status(401).json(response)
-            return
-        }
-
-        const user = await authService.verifyToken(token)
-
+        // User data is already available from the auth middleware
         const response: ApiResponse = {
             success: true,
-            data: { user }
+            data: { user: req.user }
         }
 
         res.status(200).json(response)

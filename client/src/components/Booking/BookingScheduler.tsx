@@ -150,7 +150,7 @@ export const BookingScheduler = () => {
         const [startTime] = selectedSlot.split(' - ');
         const [startHours, startMinutes] = startTime.split(':').map(Number);
         const endDate = new Date(selectedDate);
-        endDate.setHours(startHours + 1, startMinutes + 30, 0);
+        endDate.setHours(startHours + 1, startMinutes, 0);
         const endTime = format(endDate, 'HH:mm');
         const bookingDate = format(selectedDate, 'yyyy-MM-dd');
 
@@ -185,10 +185,10 @@ export const BookingScheduler = () => {
         });
     };
 
-    // Generate fixed 1.5-hour slots starting at 7:00, next at 8:30, etc., until last slot ends at 22:00
+    // Generate fixed 1-hour slots starting at 7:00, next at 8:00, etc., until last slot ends at 22:00
     const generateFixedSlots = () => {
         const slots = [];
-        const slotDuration = 90; // minutes
+        const slotDuration = 60; // minutes (changed from 90 to 60)
         let slotStart = new Date(selectedDate);
         slotStart.setHours(7, 0, 0, 0);
         const slotEndLimit = new Date(selectedDate);
@@ -202,7 +202,7 @@ export const BookingScheduler = () => {
                     end: new Date(slotEnd),
                 });
             }
-            // Move to next slot (1.5 hours later)
+            // Move to next slot (1 hour later)
             slotStart = new Date(slotStart.getTime() + slotDuration * 60000);
         }
         return slots;

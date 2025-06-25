@@ -10,11 +10,11 @@ interface AdminLayoutProps {
 
 export function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(true)
-  const { currentUser, setCurrentUser } = useStore()
+  const { currentUser, logout } = useStore()
   const navigate = useNavigate()
 
-  const handleLogout = () => {
-    setCurrentUser(null)
+  const handleLogout = async () => {
+    await logout()
     navigate('/login')
   }
 

@@ -9,10 +9,10 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
     const navigate = useNavigate();
-    const { currentUser, setCurrentUser } = useStore();
+    const { currentUser, logout } = useStore();
 
-    const handleLogout = () => {
-        setCurrentUser(null);
+    const handleLogout = async () => {
+        await logout();
         navigate('/login');
     };
 
