@@ -9,14 +9,20 @@ import { BookingScheduler } from './components/Booking/BookingScheduler';
 import { useStore } from './store/useStore';
 
 const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
-    const { currentUser, isAuthenticated, getProfile, isLoading } = useStore();
+    const { currentUser, isAuthenticated, getProfile, isLoading, error, clearError } = useStore();
     
     useEffect(() => {
-        // Check for existing authentication on mount
+        // Only check authentication if not already authenticated and not on login page
         if (!isAuthenticated && !isLoading) {
             getProfile();
         }
-    }, [isAuthenticated, isLoading, getProfile]);
+        // Clear error if on login page
+        return () => {
+            if (window.location.pathname === '/login') {
+                clearError();
+            }
+        };
+    }, [isAuthenticated, isLoading, getProfile, clearError]);
     
     if (isLoading) {
         return (
