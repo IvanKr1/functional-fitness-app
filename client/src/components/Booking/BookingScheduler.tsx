@@ -514,10 +514,33 @@ export const BookingScheduler = () => {
                         const isOutsideHours = startHour < 7 || startHour > 20;
                         const isDisabled = isPastTime || isOutsideHours;
                         
+                        const baseStyles = {
+                            width: '100%',
+                            border: '1px solid',
+                            borderColor: isSelected ? 'grey.400' : 'grey.300',
+                            background: '#fff !important',
+                            color: isDisabled 
+                                ? 'grey.500' 
+                                : isSelected 
+                                    ? '#fff' 
+                                    : '#111',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            padding: '1.1rem 0',
+                            marginBottom: 0,
+                            borderRadius: 1,
+                            boxShadow: 'none',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                            opacity: isDisabled ? 0.6 : 1,
+                            pointerEvents: isDisabled ? 'none' : 'auto',
+                        };
+
                         return (
-                            <Box
+                            <Box component="button"
                                 key={slotKey}
-                                component="button"
                                 type="button"
                                 onClick={() => {
                                     if (!isDisabled) {
@@ -525,42 +548,45 @@ export const BookingScheduler = () => {
                                         handleSlotClick(slotKey);
                                     }
                                 }}
-                                sx={{
-                                    width: '100%',
-                                    border: '1px solid',
-                                    borderColor: isSelected ? 'grey.400' : 'grey.300',
-                                    background: isDisabled 
-                                        ? 'grey.100' 
-                                        : isSelected 
-                                            ? 'grey.200' 
-                                            : '#fff',
-                                    color: isDisabled 
-                                        ? 'grey.500' 
-                                        : isSelected 
-                                            ? '#fff' 
-                                            : '#111',
-                                    fontWeight: 700,
-                                    fontSize: { xs: '1rem', sm: '1.05rem', md: '1.1rem' },
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 1,
-                                    py: 2.2,
-                                    px: 0,
-                                    mb: 0,
-                                    borderRadius: 1,
-                                    boxShadow: 'none',
-                                    outline: 'none',
-                                    cursor: isDisabled ? 'not-allowed' : 'pointer',
-                                    transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-                                    opacity: isDisabled ? 0.6 : 1,
-                                    '&:hover': {
-                                        background: isDisabled 
-                                            ? 'grey.100' 
-                                            : 'grey.100',
-                                        borderColor: isDisabled 
-                                            ? 'grey.300' 
-                                            : 'grey.400',
-                                    },
-                                }}
+                                disabled={isDisabled}
+                                sx={[
+                                    baseStyles,
+                                    isDisabled
+                                        ? {}
+                                        : isSelected
+                                            ? {
+                                                background: 'grey.200 !important',
+                                                color: '#111',
+                                                borderColor: 'grey.400',
+                                                '&:active': {
+                                                    background: 'grey.200 !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.400',
+                                                },
+                                                '&:focus-visible': {
+                                                    background: 'grey.200 !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.400',
+                                                },
+                                            }
+                                            : {
+                                                background: '#fff !important',
+                                                color: '#111',
+                                                borderColor: 'grey.300',
+                                                '&:active': {
+                                                    background: '#fff !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.300',
+                                                },
+                                                '&:focus-visible': {
+                                                    background: '#fff !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.300',
+                                                },
+                                            },
+                                ]}
+                                tabIndex={isDisabled ? -1 : 0}
+                                aria-disabled={isDisabled}
                             >
                                 {slotLabel}
                             </Box>
@@ -569,68 +595,6 @@ export const BookingScheduler = () => {
                 </Box>
             </Box>
         );
-    };
-
-    // Render the weekly view showing all days in the current week
-    const renderWeeklyView = () => {
-        const startDate = startOfWeek(selectedDate);
-        const days = [];
-
-        for (let i = 0; i < 7; i++) {
-            const currentDate = addDays(startDate, i);
-            const isToday = format(currentDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-            days.push(
-                <Box
-                    sx={{ width: { xs: '100%', sm: '50%', md: '33.33%', lg: '25%' } }}
-                    key={currentDate.toISOString()}
-                >
-                    <Card
-                        sx={{
-                            height: '100%',
-                            transition: 'all 0.2s ease-in-out',
-                            '&:hover': {
-                                transform: 'translateY(-2px)',
-                                boxShadow: theme.shadows[4],
-                            },
-                            border: isToday ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        }}
-                    >
-                        <CardContent>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    color: isToday
-                                        ? theme.palette.primary.main
-                                        : theme.palette.text.primary,
-                                    fontWeight: isToday ? 600 : 400,
-                                    mb: 1,
-                                }}
-                            >
-                                {format(currentDate, 'EEEE, MMM d')}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: theme.palette.text.secondary,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                }}
-                            >
-                                {
-                                    bookings.filter(
-                                        (b) => b.date === format(currentDate, 'yyyy-MM-dd')
-                                    ).length
-                                }{' '}
-                                bookings
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Box>
-            );
-        }
-
-        return <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>{days}</Box>;
     };
 
     return (
@@ -731,27 +695,6 @@ export const BookingScheduler = () => {
                 </Box>
             )}
 
-            {/* View mode tabs (Daily/Weekly) */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs
-                    value={viewMode}
-                    onChange={handleViewModeChange}
-                    sx={{
-                        '& .MuiTab-root': {
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            fontSize: '1rem',
-                        },
-                        '& .Mui-selected': {
-                            color: theme.palette.primary.main,
-                        },
-                    }}
-                >
-                    <Tab label="Daily" value="daily" />
-                    <Tab label="Weekly" value="weekly" />
-                </Tabs>
-            </Box>
-
             {/* Main content area: calendar and slot grid side by side */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-start' }}>
                 {/* Calendar section */}
@@ -803,7 +746,7 @@ export const BookingScheduler = () => {
                         overflowX: 'auto',
                     }}
                 >
-                    {viewMode === 'daily' ? renderDailyView() : renderWeeklyView()}
+                    {renderDailyView()}
                 </Box>
             </Box>
 
