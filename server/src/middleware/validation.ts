@@ -80,7 +80,8 @@ export const registerSchema = z.object({
     email: z.string().email('Invalid email format'),
     mobilePhone: z.string().optional(),
     role: z.enum(['USER', 'ADMIN']).optional(),
-    weeklyBookingLimit: z.number().min(1).max(10).optional()
+    weeklyBookingLimit: z.number().min(1).max(10).optional(),
+    password: z.string().min(6, 'Password must be at least 6 characters')
 })
 
 /**

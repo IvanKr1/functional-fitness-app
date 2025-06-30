@@ -39,19 +39,20 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
         name: string
         email: string
         role: Role
+        password: string
         mobilePhone?: string
         weeklyBookingLimit: number
     }
-    generatedPassword: string
 }> => {
     const {
         name,
         email,
         mobilePhone,
         role = Role.USER,
-        weeklyBookingLimit = 2
+        weeklyBookingLimit = 2,
+        password
     } = userData
-
+    console.log('passwouserDatard', userData)
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
         where: { email: email.toLowerCase() }
@@ -61,9 +62,12 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
         throw new ValidationError('User with this email already exists', 'email')
     }
 
-    // Generate random password
-    const generatedPassword = generateRandomPassword()
-    const passwordHash = await hashPassword(generatedPassword)
+    if (!password || password.length < 6) {
+        console.log('password', password)
+        throw new ValidationError('Password must be at least 6 characters', 'password')
+    }
+
+    const passwordHash = await hashPassword(password)
 
     // Create user
     const user = await prisma.user.create({
@@ -85,8 +89,7 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
             role: user.role,
             ...(user.mobilePhone && { mobilePhone: user.mobilePhone }),
             weeklyBookingLimit: user.weeklyBookingLimit
-        },
-        generatedPassword
+        }
     }
 }
 

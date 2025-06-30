@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react'
 import { Users, Plus, Search, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { CreateUserForm } from '../components/admin/CreateUserForm.js'
 import { EditUserForm } from '../components/admin/EditUserForm.js'
-import { UsersToPaySidebar } from '../components/admin/UsersToPaySidebar.js'
 import { apiService } from '../services/api.js'
 
 interface User {
@@ -417,7 +416,6 @@ export function UserManagementPage() {
           </div>
         </div>
       </div>
-      <UsersToPaySidebar />
     </div>
   )
 } 

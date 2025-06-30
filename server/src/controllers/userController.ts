@@ -275,13 +275,12 @@ export const register = async (
     res: Response
 ): Promise<void> => {
     try {
-        const { user, generatedPassword } = await userService.registerUser(req.body)
+        const { user } = await userService.registerUser(req.body)
 
         const response: ApiResponse = {
             success: true,
             data: {
                 user,
-                generatedPassword,
                 message: 'User registered successfully'
             }
         }

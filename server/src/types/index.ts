@@ -49,6 +49,7 @@ export interface RegisterRequest {
     mobilePhone?: string
     role?: Role
     weeklyBookingLimit?: number
+    password: string
 }
 
 /**
