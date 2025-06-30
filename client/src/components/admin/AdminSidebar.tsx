@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { LayoutDashboard, Calendar, Settings, Menu, Users } from 'lucide-react'
+import { LayoutDashboard, Calendar, Settings, Menu, Users, AlertTriangle } from 'lucide-react'
 import { cn } from '../../lib/utils'
 
 interface AdminSidebarProps {
@@ -72,6 +72,21 @@ export function AdminSidebar({ open, onToggle }: AdminSidebarProps) {
           <Users className="h-5 w-5 mr-3" />
           <span className={cn('transition-opacity duration-200', open ? 'opacity-100' : 'opacity-0')}>
             User Management
+          </span>
+        </Link>
+
+        <Link
+          to="/admin/users-to-pay"
+          className={cn(
+            'flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors',
+            isCurrentPath('/admin/users-to-pay')
+              ? 'bg-blue-50 text-blue-700'
+              : 'text-gray-700 hover:bg-gray-50'
+          )}
+        >
+          <AlertTriangle className="h-5 w-5 mr-3" />
+          <span className={cn('transition-opacity duration-200', open ? 'opacity-100' : 'opacity-0')}>
+            Users to Pay
           </span>
         </Link>
 
