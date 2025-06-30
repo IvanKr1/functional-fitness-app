@@ -13,6 +13,7 @@ import {
     DialogActions,
     Paper,
     useTheme,
+    CircularProgress,
 } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -39,6 +40,8 @@ export const BookingScheduler = () => {
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
     const [isLoadingBookings, setIsLoadingBookings] = useState(false);
     const [bookingError, setBookingError] = useState<string | null>(null);
+    const [isBookingLoading, setIsBookingLoading] = useState(false);
+    const [isResetLoading, setIsResetLoading] = useState(false);
 
     // Fetch user bookings from database on component mount
     useEffect(() => {
@@ -123,7 +126,7 @@ export const BookingScheduler = () => {
     // Confirm reset booking limits
     const handleConfirmReset = async () => {
         if (!currentUser) return;
-
+        setIsResetLoading(true);
         try {
             // Use the new bulk delete endpoint
             const response = await apiService.delete<{
@@ -170,6 +173,8 @@ export const BookingScheduler = () => {
         } catch (error) {
             console.error('Error resetting bookings:', error);
             // Handle network or other errors
+        } finally {
+            setIsResetLoading(false);
         }
     };
 
@@ -251,46 +256,45 @@ export const BookingScheduler = () => {
     // Performs final validation before adding the booking
     const handleBookingConfirm = async () => {
         if (!currentUser || !selectedSlot) return;
-
-        setBookingError(null); // Clear any previous errors
-
-        const [startTime] = selectedSlot.split(' - ');
-        const [startHours, startMinutes] = startTime.split(':').map(Number);
-        const endDate = new Date(selectedDate);
-        endDate.setHours(startHours + 1, startMinutes, 0);
-        const endTime = format(endDate, 'HH:mm');
-        const bookingDate = format(selectedDate, 'yyyy-MM-dd');
-
-        // Create ISO datetime strings for the API
-        // Use the selected date and parse the time properly
-        const startDateTime = new Date(selectedDate);
-        startDateTime.setHours(startHours, startMinutes, 0, 0);
-        
-        const endDateTime = new Date(selectedDate);
-        endDateTime.setHours(startHours + 1, startMinutes, 0, 0);
-
-        // Validate that the booking is within allowed hours (7:00 - 20:00)
-        if (startHours < 7 || startHours >= 20) {
-            setBookingError('Booking time is outside allowed hours (7:00 - 20:00)');
-            return;
-        }
-
-        // Check if booking is in the past
-        const now = new Date();
-        if (startDateTime <= now) {
-            setBookingError('Cannot book sessions in the past. Please select a future time.');
-            return;
-        }
-
-        const requestData = {
-            startTime: startDateTime.toISOString(),
-            endTime: endDateTime.toISOString(),
-            notes: '' // Optional notes field
-        };
-
-        console.log('Sending booking request:', requestData);
-
+        setBookingError(null);
+        setIsBookingLoading(true);
         try {
+            const [startTime] = selectedSlot.split(' - ');
+            const [startHours, startMinutes] = startTime.split(':').map(Number);
+            const endDate = new Date(selectedDate);
+            endDate.setHours(startHours + 1, startMinutes, 0);
+            const endTime = format(endDate, 'HH:mm');
+            const bookingDate = format(selectedDate, 'yyyy-MM-dd');
+
+            // Create ISO datetime strings for the API
+            // Use the selected date and parse the time properly
+            const startDateTime = new Date(selectedDate);
+            startDateTime.setHours(startHours, startMinutes, 0, 0);
+            
+            const endDateTime = new Date(selectedDate);
+            endDateTime.setHours(startHours + 1, startMinutes, 0, 0);
+
+            // Validate that the booking is within allowed hours (7:00 - 20:00)
+            if (startHours < 7 || startHours >= 20) {
+                setBookingError('Booking time is outside allowed hours (7:00 - 20:00)');
+                return;
+            }
+
+            // Check if booking is in the past
+            const now = new Date();
+            if (startDateTime <= now) {
+                setBookingError('Cannot book sessions in the past. Please select a future time.');
+                return;
+            }
+
+            const requestData = {
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                notes: '' // Optional notes field
+            };
+
+            console.log('Sending booking request:', requestData);
+
             // Make API call to create booking
             const response = await apiService.post<{
                 success: boolean;
@@ -326,6 +330,8 @@ export const BookingScheduler = () => {
         } catch (error) {
             console.error('Error creating booking:', error);
             setBookingError('Network error. Please try again.');
+        } finally {
+            setIsBookingLoading(false);
         }
     };
 
@@ -802,7 +808,7 @@ export const BookingScheduler = () => {
                             px: 3,
                         }}
                     >
-                        Confirm
+                        {isBookingLoading ? <CircularProgress size={20} color="inherit" /> : 'Confirm'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -881,13 +887,14 @@ export const BookingScheduler = () => {
                         onClick={handleConfirmReset}
                         variant="contained"
                         color="error"
+                        disabled={isResetLoading}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
                             px: 3,
                         }}
                     >
-                        Reset All
+                        {isResetLoading ? <CircularProgress size={20} color="inherit" /> : 'Reset All'}
                     </Button>
                 </DialogActions>
             </Dialog>
