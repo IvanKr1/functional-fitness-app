@@ -24,12 +24,23 @@ interface UsersResponse {
   error?: string
 }
 
+interface DeleteUserResponse {
+  success: boolean
+  message?: string
+  error?: string
+}
+
 export function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
+  const [deleteConfirm, setDeleteConfirm] = useState<{ show: boolean; userId: string | null; userName: string }>({
+    show: false,
+    userId: null,
+    userName: ''
+  })
 
   const fetchUsers = async () => {
     try {
@@ -57,6 +68,36 @@ export function UserManagementPage() {
   const handleUserCreated = () => {
     fetchUsers()
     setShowCreateForm(false)
+  }
+
+  const handleDeleteClick = (user: User) => {
+    setDeleteConfirm({
+      show: true,
+      userId: user.id,
+      userName: user.name
+    })
+  }
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteConfirm.userId) return
+
+    try {
+      const response = await apiService.delete<DeleteUserResponse>(`/users/${deleteConfirm.userId}`)
+      
+      if (response.success) {
+        // Remove user from local state
+        setUsers(users.filter(user => user.id !== deleteConfirm.userId))
+        setDeleteConfirm({ show: false, userId: null, userName: '' })
+      } else {
+        setError(response.error || 'Failed to delete user')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to delete user')
+    }
+  }
+
+  const handleDeleteCancel = () => {
+    setDeleteConfirm({ show: false, userId: null, userName: '' })
   }
 
   const filteredUsers = users.filter(user =>
@@ -107,6 +148,39 @@ export function UserManagementPage() {
       {/* Create User Form */}
       {showCreateForm && (
         <CreateUserForm onUserCreated={handleUserCreated} />
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteConfirm.show && (
+        <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
+          <div className="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div className="mt-3 text-center">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                <Trash2 className="h-6 w-6 text-red-600" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900 mt-4">Delete User</h3>
+              <div className="mt-2 px-7 py-3">
+                <p className="text-sm text-gray-500">
+                  Are you sure you want to delete <strong>{deleteConfirm.userName}</strong>? This action cannot be undone.
+                </p>
+              </div>
+              <div className="flex justify-center space-x-3 mt-4">
+                <button
+                  onClick={handleDeleteCancel}
+                  className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDeleteConfirm}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Users List */}
@@ -179,7 +253,12 @@ export function UserManagementPage() {
                       <button className="text-blue-600 hover:text-blue-900">
                         <Edit className="h-4 w-4" />
                       </button>
-                      <button className="text-red-600 hover:text-red-900">
+                      <button 
+                        onClick={() => handleDeleteClick(user)}
+                        className="text-red-600 hover:text-red-900"
+                        disabled={user.role === 'ADMIN'}
+                        title={user.role === 'ADMIN' ? 'Cannot delete admin users' : 'Delete user'}
+                      >
                         <Trash2 className="h-4 w-4" />
                       </button>
                     </div>
