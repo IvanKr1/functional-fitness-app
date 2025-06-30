@@ -42,6 +42,7 @@ export const BookingScheduler = () => {
     const [bookingError, setBookingError] = useState<string | null>(null);
     const [isBookingLoading, setIsBookingLoading] = useState(false);
     const [isResetLoading, setIsResetLoading] = useState(false);
+    const [isRemoveLoading, setIsRemoveLoading] = useState(false);
 
     // Fetch user bookings from database on component mount
     useEffect(() => {
@@ -387,6 +388,7 @@ export const BookingScheduler = () => {
     // Confirm booking removal
     const handleConfirmRemove = async () => {
         if (bookingToRemove) {
+            setIsRemoveLoading(true);
             try {
                 // Make API call to delete booking
                 const response = await apiService.delete<{
@@ -423,17 +425,17 @@ export const BookingScheduler = () => {
                         // Replace all bookings with fetched ones
                         setBookings(userBookings);
                     }
-                    
                     setBookingToRemove(null);
                     setIsRemoveDialogOpen(false);
                 } else {
                     // Handle API error
                     console.error('Failed to delete booking:', response.error);
-                    // You might want to show an error message to the user here
                 }
             } catch (error) {
                 console.error('Error deleting booking:', error);
                 // Handle network or other errors
+            } finally {
+                setIsRemoveLoading(false);
             }
         }
     };
@@ -541,7 +543,6 @@ export const BookingScheduler = () => {
                             cursor: isDisabled ? 'not-allowed' : 'pointer',
                             transition: 'background 0.15s, border-color 0.15s, color 0.15s',
                             opacity: isDisabled ? 0.6 : 1,
-                            pointerEvents: isDisabled ? 'none' : 'auto',
                         };
 
                         return (
@@ -557,6 +558,10 @@ export const BookingScheduler = () => {
                                 disabled={isDisabled}
                                 sx={[
                                     baseStyles,
+                                    {
+                                      '&:disabled': { cursor: 'not-allowed' },
+                                      '&:disabled:hover': { cursor: 'not-allowed', borderColor: "#e0e0e0" },
+                                    },
                                     isDisabled
                                         ? {}
                                         : isSelected
@@ -844,13 +849,14 @@ export const BookingScheduler = () => {
                         onClick={handleConfirmRemove}
                         variant="contained"
                         color="error"
+                        disabled={isRemoveLoading}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
                             px: 3,
                         }}
                     >
-                        Cancel Booking
+                        {isRemoveLoading ? <CircularProgress size={20} color="inherit" /> : 'Cancel Booking'}
                     </Button>
                 </DialogActions>
             </Dialog>
