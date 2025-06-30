@@ -85,10 +85,10 @@ export function UsersToPaySidebar() {
 
   return (
     <aside className="w-80 bg-white border-l border-gray-200 h-full flex flex-col">
-      <div className="p-4 border-b border-gray-200">
-        <h2 className="text-lg font-bold text-gray-900 mb-1">Users Who Need to Pay</h2>
-        <p className="text-xs text-gray-500">Ordered by closest due date</p>
-      </div>
+      {/* <div className="p-4 border-b border-gray-200"> */}
+        {/* <h2 className="text-lg font-bold text-gray-900 mb-1">Users Who Need to Pay</h2>
+        <p className="text-xs text-gray-500">Ordered by closest due date</p> */}
+      {/* </div> */}
       {isLoading ? (
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
