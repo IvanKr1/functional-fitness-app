@@ -7,6 +7,7 @@ import type { ChangeEvent } from 'react'
 import type { SelectChangeEvent } from '@mui/material'
 import { cn } from '../../lib/utils'
 import type { Theme } from '@mui/material/styles'
+import { format } from 'date-fns'
 
 const HOURS = Array.from({ length: 13 }, (_, i) => `${i + 8}:00`)
 
@@ -90,6 +91,15 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
   const paginatedBookings = getPaginatedBookings()
   const totalPages = Math.ceil(pagination.totalItems / pagination.itemsPerPage)
 
+  // Only show bookings for today
+  const today = format(new Date(), 'yyyy-MM-dd')
+  const allTodaysBookings = getPaginatedBookings().filter(b => b.date === today)
+  // Pagination for today's bookings
+  const ITEMS_PER_PAGE = pagination.itemsPerPage
+  const totalTodaysPages = Math.ceil(allTodaysBookings.length / ITEMS_PER_PAGE)
+  const currentPage = pagination.currentPage
+  const todaysBookings = allTodaysBookings.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE)
+
   const handleUsernameChange = (e: ChangeEvent<HTMLInputElement>) => {
     setFilters({ userName: e.target.value })
   }
@@ -168,7 +178,7 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
                     </TableRow>
                   </StyledTableHead>
                   <TableBody>
-                    {paginatedBookings.map((booking) => (
+                    {todaysBookings.map((booking) => (
                       <StyledTableRow key={booking.id}>
                         <TableCell>
                           <Typography variant="body2" fontWeight={500}>
@@ -205,11 +215,11 @@ export function AdminDashboard({ className }: AdminDashboardProps) {
             </Box>
 
             {/* Pagination */}
-            {totalPages > 1 && (
+            {totalTodaysPages > 1 && (
               <Box display="flex" justifyContent="center" mt={2}>
                 <Pagination
-                  count={totalPages}
-                  page={pagination.currentPage}
+                  count={totalTodaysPages}
+                  page={currentPage}
                   onChange={handlePageChange}
                   color="primary"
                   shape="rounded"

@@ -11,7 +11,8 @@ const createUserSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
   mobilePhone: z.string().optional(),
   role: z.enum(['USER', 'ADMIN']),
-  weeklyBookingLimit: z.number().min(1).max(10)
+  weeklyBookingLimit: z.number().min(1).max(10),
+  password: z.string().min(6, 'Password must be at least 6 characters')
 })
 
 type CreateUserFormData = z.infer<typeof createUserSchema>
@@ -38,7 +39,6 @@ interface CreateUserFormProps {
 export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
   const [showPassword, setShowPassword] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [generatedPassword, setGeneratedPassword] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const {
@@ -57,13 +57,17 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
   const onSubmit = async (data: CreateUserFormData) => {
     setIsSubmitting(true)
     setError(null)
-    setGeneratedPassword(null)
-
+    // Debug: log data before sending
+    console.log('Submitting user data:', data)
     try {
-      const response = await apiService.post<CreateUserResponse>('/users', data)
-      
-      if (response.success && response.data) {
-        setGeneratedPassword(response.data.generatedPassword)
+      // Ensure password is included
+      const payload = {
+        ...data,
+        weeklyBookingLimit: Number(data.weeklyBookingLimit), // ensure number
+        password: data.password
+      }
+      const response = await apiService.post<{ success: boolean, error?: string }>('/users', payload)
+      if (response.success) {
         reset()
         onUserCreated()
       } else {
@@ -172,37 +176,39 @@ export function CreateUserForm({ onUserCreated }: CreateUserFormProps) {
           )}
         </div>
 
+        {/* Password Field */}
+        <div>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-2">
+            Password *
+          </label>
+          <div className="relative">
+            <input
+              {...register('password')}
+              type={showPassword ? 'text' : 'password'}
+              id="password"
+              className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
+                errors.password ? 'border-red-300' : 'border-gray-300'
+              }`}
+              placeholder="Enter password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-2 top-2 text-gray-500 hover:text-gray-700"
+              tabIndex={-1}
+            >
+              {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+          {errors.password && (
+            <p className="mt-1 text-sm text-red-600">{errors.password.message}</p>
+          )}
+        </div>
+
         {/* Error Message */}
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-md p-4">
             <p className="text-sm text-red-600">{error}</p>
-          </div>
-        )}
-
-        {/* Generated Password Display */}
-        {generatedPassword && (
-          <div className="bg-green-50 border border-green-200 rounded-md p-4">
-            <p className="text-sm font-medium text-green-800 mb-2">
-              User created successfully! Generated password:
-            </p>
-            <div className="flex items-center space-x-2">
-              <input
-                type={showPassword ? 'text' : 'password'}
-                value={generatedPassword}
-                readOnly
-                className="flex-1 px-3 py-2 bg-white border border-green-300 rounded-md text-sm font-mono"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="p-2 text-green-600 hover:text-green-800"
-              >
-                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-              </button>
-            </div>
-            <p className="text-xs text-green-600 mt-2">
-              Please share this password with the user. They can change it after their first login.
-            </p>
           </div>
         )}
 
