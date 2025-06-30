@@ -174,3 +174,34 @@ export const getUsersMissingThisWeek = async (req: AuthenticatedRequest, res: Re
         })
     }
 }
+
+/**
+ * Delete all bookings for a user endpoint (marks as CANCELLED)
+ */
+export const deleteAllUserBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { user } = req
+        const { userId } = req.params
+
+        if (!userId) {
+            throw new Error('User ID is required')
+        }
+
+        const deletedCount = await bookingService.deleteAllUserBookings(
+            userId,
+            user!.id,
+            user!.role
+        )
+
+        res.status(200).json({
+            success: true,
+            data: { deletedCount },
+            message: `Successfully cancelled ${deletedCount} booking${deletedCount !== 1 ? 's' : ''}`
+        })
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to cancel bookings'
+        })
+    }
+}

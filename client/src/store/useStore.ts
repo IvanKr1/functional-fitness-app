@@ -13,6 +13,7 @@ interface AppState extends AuthState {
     clearError: () => void;
     addBooking: (booking: Booking) => void;
     removeBooking: (bookingId: string) => void;
+    setBookings: (bookings: Booking[]) => void;
     updateSchedules: (schedules: DaySchedule[]) => void;
 }
 
@@ -121,6 +122,7 @@ export const useStore = create<AppState>()(
                 set((state) => ({
                     bookings: state.bookings.filter((b) => b.id !== bookingId),
                 })),
+            setBookings: (bookings) => set({ bookings }),
             updateSchedules: (schedules) => set({ schedules }),
         }),
         {

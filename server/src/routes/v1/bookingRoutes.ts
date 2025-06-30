@@ -40,6 +40,12 @@ router.delete('/:id',
     asyncHandler(bookingController.deleteBooking)
 )
 
+// DELETE /bookings/user/:userId - Cancel all bookings for a user (marks as CANCELLED)
+router.delete('/user/:userId',
+    authenticateToken,
+    asyncHandler(bookingController.deleteAllUserBookings)
+)
+
 // GET /bookings/week-count - Get weekly booking count for user
 router.get('/week-count',
     authenticateToken,

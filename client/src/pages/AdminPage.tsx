@@ -1,5 +1,4 @@
 import { Navigate } from 'react-router-dom'
-import { AdminDashboard } from '../components/admin/AdminDashboard'
 import { useStore } from '../store/useStore'
 
 export function AdminPage() {
@@ -13,6 +12,4 @@ export function AdminPage() {
   if (currentUser.role !== 'ADMIN') {
     return <Navigate to="/" />
   }
-
-  return <AdminDashboard />
 } 

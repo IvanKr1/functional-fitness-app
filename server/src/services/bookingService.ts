@@ -34,8 +34,8 @@ const getWeekBounds = (date: Date): { start: Date; end: Date } => {
 const isWithinBookingHours = (startTime: Date, endTime: Date): boolean => {
     const startHour = startTime.getHours()
     const endHour = endTime.getHours()
-
-    return startHour >= 7 && endHour <= 20 && startTime < endTime
+    // Allow slots starting at 7:00 up to 20:00, ending at 21:00
+    return startHour >= 7 && startHour <= 20 && endHour === startHour + 1 && endHour <= 21 && startTime < endTime
 }
 
 /**
@@ -299,7 +299,11 @@ export const getUserBookings = async (
     const bookings = await prisma.booking.findMany({
         where: {
             userId,
-            ...(options?.status && { status: options.status }),
+            // Only show active bookings by default, unless status is explicitly specified
+            ...(options?.status
+                ? { status: options.status }
+                : { status: { not: BookingStatus.CANCELLED } }
+            ),
             ...(options?.startDate && options?.endDate && {
                 startTime: {
                     gte: options.startDate,
@@ -449,4 +453,47 @@ export const getUsersWithoutBookingsThisWeek = async (): Promise<Array<{
     })
 
     return usersWithoutBookings
+}
+
+/**
+ * Delete all bookings for a user (marks as CANCELLED)
+ */
+export const deleteAllUserBookings = async (
+    userId: string,
+    requestingUserId: string,
+    requestingUserRole: Role
+): Promise<number> => {
+    // Check authorization - users can only delete their own bookings, admins can delete any user's
+    if (requestingUserRole !== Role.ADMIN && requestingUserId !== userId) {
+        throw new AuthorizationError('You can only delete your own bookings')
+    }
+
+    // Get all active bookings for the user
+    const activeBookings = await prisma.booking.findMany({
+        where: {
+            userId,
+            status: {
+                not: BookingStatus.CANCELLED
+            }
+        }
+    })
+
+    if (activeBookings.length === 0) {
+        return 0
+    }
+
+    // Mark all bookings as cancelled
+    await prisma.booking.updateMany({
+        where: {
+            userId,
+            status: {
+                not: BookingStatus.CANCELLED
+            }
+        },
+        data: {
+            status: BookingStatus.CANCELLED
+        }
+    })
+
+    return activeBookings.length
 } 
