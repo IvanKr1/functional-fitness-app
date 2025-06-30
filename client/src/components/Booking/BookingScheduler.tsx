@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -13,12 +14,14 @@ import {
     DialogActions,
     Paper,
     useTheme,
+    CircularProgress,
 } from '@mui/material';
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
 import { useStore } from '../../store/useStore';
+import { apiService } from '../../services/api.js';
 import type { ViewMode } from '../../types';
 
 
@@ -27,7 +30,8 @@ const MAX_BOOKINGS_PER_SLOT = 10;
 
 export const BookingScheduler = () => {
     const theme = useTheme();
-    const { currentUser, bookings, addBooking, removeBooking } = useStore();
+    const navigate = useNavigate();
+    const { currentUser, bookings, addBooking, removeBooking, setBookings } = useStore();
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -36,6 +40,54 @@ export const BookingScheduler = () => {
     const [bookingToRemove, setBookingToRemove] = useState<string | null>(null);
     const [isRemoveDialogOpen, setIsRemoveDialogOpen] = useState(false);
     const [isResetDialogOpen, setIsResetDialogOpen] = useState(false);
+    const [isLoadingBookings, setIsLoadingBookings] = useState(false);
+    const [bookingError, setBookingError] = useState<string | null>(null);
+    const [isBookingLoading, setIsBookingLoading] = useState(false);
+    const [isResetLoading, setIsResetLoading] = useState(false);
+    const [isRemoveLoading, setIsRemoveLoading] = useState(false);
+
+    // Fetch user bookings from database on component mount
+    useEffect(() => {
+        const fetchUserBookings = async () => {
+            if (!currentUser) return;
+
+            setIsLoadingBookings(true);
+            try {
+                const response = await apiService.get<{
+                    success: boolean;
+                    data?: Array<{
+                        id: string;
+                        startTime: string;
+                        endTime: string;
+                        status: string;
+                        notes?: string | null;
+                    }>;
+                    error?: string;
+                }>('/bookings');
+
+                if (response.success && response.data) {
+                    // Convert API response to local booking format
+                    const userBookings = response.data.map(booking => ({
+                        id: booking.id,
+                        userId: currentUser.id,
+                        userName: currentUser.name,
+                        startTime: format(new Date(booking.startTime), 'HH:mm'),
+                        endTime: format(new Date(booking.endTime), 'HH:mm'),
+                        date: format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                    }));
+
+                    // Replace all bookings with fetched ones
+                    setBookings(userBookings);
+                }
+            } catch (error) {
+                console.error('Error fetching user bookings:', error);
+            } finally {
+                setIsLoadingBookings(false);
+            }
+        };
+
+        fetchUserBookings();
+    }, [currentUser, setBookings]);
 
     // Get user's upcoming bookings
     const userBookings = currentUser
@@ -75,12 +127,58 @@ export const BookingScheduler = () => {
     };
 
     // Confirm reset booking limits
-    const handleConfirmReset = () => {
-        // Remove all bookings for the current user
-        userBookings.forEach((booking) => {
-            removeBooking(booking.id);
-        });
-        setIsResetDialogOpen(false);
+    const handleConfirmReset = async () => {
+        if (!currentUser) return;
+        setIsResetLoading(true);
+        try {
+            // Use the new bulk delete endpoint
+            const response = await apiService.delete<{
+                success: boolean;
+                data?: { deletedCount: number };
+                error?: string;
+            }>(`/bookings/user/${currentUser.id}`);
+
+            if (response.success && response.data) {
+                // Refresh bookings from server to get updated data
+                const refreshResponse = await apiService.get<{
+                    success: boolean;
+                    data?: Array<{
+                        id: string;
+                        startTime: string;
+                        endTime: string;
+                        status: string;
+                        notes?: string | null;
+                    }>;
+                    error?: string;
+                }>('/bookings');
+
+                if (refreshResponse.success && refreshResponse.data) {
+                    // Convert API response to local booking format
+                    const userBookings = refreshResponse.data.map(booking => ({
+                        id: booking.id,
+                        userId: currentUser.id,
+                        userName: currentUser.name,
+                        startTime: format(new Date(booking.startTime), 'HH:mm'),
+                        endTime: format(new Date(booking.endTime), 'HH:mm'),
+                        date: format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                    }));
+
+                    // Replace all bookings with fetched ones
+                    setBookings(userBookings);
+                }
+                
+                setIsResetDialogOpen(false);
+                console.log(`Successfully cancelled ${response.data.deletedCount} booking(s)`);
+            } else {
+                console.error('Failed to reset bookings:', response.error);
+                // You might want to show an error message to the user here
+            }
+        } catch (error) {
+            console.error('Error resetting bookings:', error);
+            // Handle network or other errors
+        } finally {
+            setIsResetLoading(false);
+        }
     };
 
     // Handle switching between daily and weekly views
@@ -102,6 +200,7 @@ export const BookingScheduler = () => {
         if (!currentUser) return;
 
         const [startTime] = slot.split(' - ');
+        const [startHours, startMinutes] = startTime.split(':').map(Number);
         const bookingDate = format(selectedDate, 'yyyy-MM-dd');
 
         // Check if the selected slot is already full (10 bookings)
@@ -137,6 +236,20 @@ export const BookingScheduler = () => {
             return;
         }
 
+        // Check if the booking time is in the past
+        const now = new Date();
+        const selectedDateTime = new Date(selectedDate);
+        selectedDateTime.setHours(startHours, startMinutes, 0, 0);
+        
+        if (selectedDateTime <= now) {
+            return; // Don't allow booking past times
+        }
+
+        // Check if the booking time is within allowed hours (7:00 - 20:00)
+        if (startHours < 7 || startHours >= 20) {
+            return; // Don't allow booking outside allowed hours
+        }
+
         // If all checks pass, open the booking dialog
         setSelectedSlot(slot);
         setIsBookingDialogOpen(true);
@@ -144,32 +257,85 @@ export const BookingScheduler = () => {
 
     // Handle confirming a booking
     // Performs final validation before adding the booking
-    const handleBookingConfirm = () => {
+    const handleBookingConfirm = async () => {
         if (!currentUser || !selectedSlot) return;
+        setBookingError(null);
+        setIsBookingLoading(true);
+        try {
+            const [startTime] = selectedSlot.split(' - ');
+            const [startHours, startMinutes] = startTime.split(':').map(Number);
+            const endDate = new Date(selectedDate);
+            endDate.setHours(startHours + 1, startMinutes, 0);
+            const endTime = format(endDate, 'HH:mm');
+            const bookingDate = format(selectedDate, 'yyyy-MM-dd');
 
-        const [startTime] = selectedSlot.split(' - ');
-        const [startHours, startMinutes] = startTime.split(':').map(Number);
-        const endDate = new Date(selectedDate);
-        endDate.setHours(startHours + 1, startMinutes, 0);
-        const endTime = format(endDate, 'HH:mm');
-        const bookingDate = format(selectedDate, 'yyyy-MM-dd');
+            // Create ISO datetime strings for the API
+            // Use the selected date and parse the time properly
+            const startDateTime = new Date(selectedDate);
+            startDateTime.setHours(startHours, startMinutes, 0, 0);
+            
+            const endDateTime = new Date(selectedDate);
+            endDateTime.setHours(startHours + 1, startMinutes, 0, 0);
 
-        // Final check for weekly booking limit
-        const startOfCurrentWeek = startOfWeek(selectedDate);
-        const endOfCurrentWeek = endOfWeek(selectedDate);
+            // Validate that the booking is within allowed hours (7:00 - 20:00)
+            if (startHours < 7 || startHours >= 20) {
+                setBookingError('Booking time is outside allowed hours (7:00 - 20:00)');
+                return;
+            }
 
-        // Add the booking if all checks pass
-        addBooking({
-            id: Math.random().toString(36).substr(2, 9),
-            userId: currentUser.id,
-            userName: currentUser.name,
-            startTime,
-            endTime,
-            date: bookingDate,
-        });
+            // Check if booking is in the past
+            const now = new Date();
+            if (startDateTime <= now) {
+                setBookingError('Cannot book sessions in the past. Please select a future time.');
+                return;
+            }
 
-        setIsBookingDialogOpen(false);
-        setSelectedSlot(null);
+            const requestData = {
+                startTime: startDateTime.toISOString(),
+                endTime: endDateTime.toISOString(),
+                notes: '' // Optional notes field
+            };
+
+            console.log('Sending booking request:', requestData);
+
+            // Make API call to create booking
+            const response = await apiService.post<{
+                success: boolean;
+                data?: {
+                    id: string;
+                    startTime: string;
+                    endTime: string;
+                    status: string;
+                    notes?: string | null;
+                };
+                error?: string;
+            }>('/bookings', requestData);
+
+            if (response.success && response.data) {
+                // Add the booking to local state with the response data
+                addBooking({
+                    id: response.data.id,
+                    userId: currentUser.id,
+                    userName: currentUser.name,
+                    startTime,
+                    endTime,
+                    date: bookingDate,
+                });
+
+                setIsBookingDialogOpen(false);
+                setSelectedSlot(null);
+                setBookingError(null);
+            } else {
+                // Handle API error
+                console.error('Failed to create booking:', response.error);
+                setBookingError(response.error || 'Failed to create booking');
+            }
+        } catch (error) {
+            console.error('Error creating booking:', error);
+            setBookingError('Network error. Please try again.');
+        } finally {
+            setIsBookingLoading(false);
+        }
     };
 
     // Helper: Check if a slot (start, end) overlaps with any existing bookings for the selected date
@@ -185,14 +351,18 @@ export const BookingScheduler = () => {
         });
     };
 
-    // Generate fixed 1-hour slots starting at 7:00, next at 8:00, etc., until last slot ends at 22:00
+    // Generate fixed 1-hour slots starting at 7:00, next at 8:00, etc., until last slot ends at 21:00
     const generateFixedSlots = () => {
+        // If selectedDate is Sunday (0 = Sunday)
+        if (selectedDate.getDay() === 0) {
+            return [];
+        }
         const slots = [];
-        const slotDuration = 60; // minutes (changed from 90 to 60)
+        const slotDuration = 60; // minutes
         let slotStart = new Date(selectedDate);
         slotStart.setHours(7, 0, 0, 0);
         const slotEndLimit = new Date(selectedDate);
-        slotEndLimit.setHours(22, 0, 0, 0);
+        slotEndLimit.setHours(21, 0, 0, 0); // Last slot ends at 21:00
         while (slotStart < slotEndLimit) {
             const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
             // Only show if slot is available and within the same day
@@ -218,16 +388,69 @@ export const BookingScheduler = () => {
     };
 
     // Confirm booking removal
-    const handleConfirmRemove = () => {
+    const handleConfirmRemove = async () => {
         if (bookingToRemove) {
-            removeBooking(bookingToRemove);
-            setBookingToRemove(null);
-            setIsRemoveDialogOpen(false);
+            setIsRemoveLoading(true);
+            try {
+                // Make API call to delete booking
+                const response = await apiService.delete<{
+                    success: boolean;
+                    data?: null;
+                    error?: string;
+                }>(`/bookings/${bookingToRemove}`);
+
+                if (response.success) {
+                    // Refresh bookings from server to get updated data
+                    const refreshResponse = await apiService.get<{
+                        success: boolean;
+                        data?: Array<{
+                            id: string;
+                            startTime: string;
+                            endTime: string;
+                            status: string;
+                            notes?: string | null;
+                        }>;
+                        error?: string;
+                    }>('/bookings');
+
+                    if (refreshResponse.success && refreshResponse.data) {
+                        // Convert API response to local booking format
+                        const userBookings = refreshResponse.data.map(booking => ({
+                            id: booking.id,
+                            userId: currentUser!.id,
+                            userName: currentUser!.name,
+                            startTime: format(new Date(booking.startTime), 'HH:mm'),
+                            endTime: format(new Date(booking.endTime), 'HH:mm'),
+                            date: format(new Date(booking.startTime), 'yyyy-MM-dd'),
+                        }));
+
+                        // Replace all bookings with fetched ones
+                        setBookings(userBookings);
+                    }
+                    setBookingToRemove(null);
+                    setIsRemoveDialogOpen(false);
+                } else {
+                    // Handle API error
+                    console.error('Failed to delete booking:', response.error);
+                }
+            } catch (error) {
+                console.error('Error deleting booking:', error);
+                // Handle network or other errors
+            } finally {
+                setIsRemoveLoading(false);
+            }
         }
     };
 
     // Render the pretty grid of fixed slots
     const renderDailyView = () => {
+        if (selectedDate.getDay() === 0) {
+            return (
+                <Typography color="error" sx={{ mt: 2, fontWeight: 500 }}>
+                    Booking is not available on Sundays.
+                </Typography>
+            );
+        }
         // Booking rules for disabling all slots
         const hasUserBookingForDay =
             currentUser &&
@@ -292,38 +515,91 @@ export const BookingScheduler = () => {
                         const slotLabel = `${format(start, 'HH:mm')}`;
                         const slotKey = format(start, 'HH:mm') + ' - ' + format(end, 'HH:mm');
                         const isSelected = uiSelectedSlot === slotKey;
+                        
+                        // Check if slot is disabled (past time or outside hours)
+                        const now = new Date();
+                        const isPastTime = start <= now;
+                        const startHour = start.getHours();
+                        // Allow slots starting at 7:00 up to and including 20:00
+                        const isOutsideHours = startHour < 7 || startHour > 20;
+                        const isDisabled = isPastTime || isOutsideHours;
+                        
+                        const baseStyles = {
+                            width: '100%',
+                            border: '1px solid',
+                            borderColor: isSelected ? 'grey.400' : 'grey.300',
+                            background: '#fff !important',
+                            color: isDisabled 
+                                ? 'grey.500' 
+                                : isSelected 
+                                    ? '#fff' 
+                                    : '#111',
+                            fontWeight: 700,
+                            fontSize: '1rem',
+                            textTransform: 'uppercase',
+                            letterSpacing: 1,
+                            padding: '1.1rem 0',
+                            marginBottom: 0,
+                            borderRadius: 1,
+                            boxShadow: 'none',
+                            cursor: isDisabled ? 'not-allowed' : 'pointer',
+                            transition: 'background 0.15s, border-color 0.15s, color 0.15s',
+                            opacity: isDisabled ? 0.6 : 1,
+                        };
+
                         return (
-                            <Box
+                            <Box component="button"
                                 key={slotKey}
-                                component="button"
                                 type="button"
                                 onClick={() => {
-                                    setUiSelectedSlot(slotKey);
-                                    handleSlotClick(slotKey);
+                                    if (!isDisabled) {
+                                        setUiSelectedSlot(slotKey);
+                                        handleSlotClick(slotKey);
+                                    }
                                 }}
-                                sx={{
-                                    width: '100%',
-                                    border: '1px solid',
-                                    borderColor: isSelected ? 'grey.400' : 'grey.300',
-                                    background: isSelected ? 'grey.200' : '#fff',
-                                    color: isSelected ? '#fff' : '#111',
-                                    fontWeight: 700,
-                                    fontSize: { xs: '1rem', sm: '1.05rem', md: '1.1rem' },
-                                    textTransform: 'uppercase',
-                                    letterSpacing: 1,
-                                    py: 2.2,
-                                    px: 0,
-                                    mb: 0,
-                                    borderRadius: 1,
-                                    boxShadow: 'none',
-                                    outline: 'none',
-                                    cursor: 'pointer',
-                                    transition: 'background 0.15s, border-color 0.15s, color 0.15s',
-                                    '&:hover': {
-                                        background: 'grey.100',
-                                        borderColor: 'grey.400',
+                                disabled={isDisabled}
+                                sx={[
+                                    baseStyles,
+                                    {
+                                      '&:disabled': { cursor: 'not-allowed' },
+                                      '&:disabled:hover': { cursor: 'not-allowed', borderColor: "#e0e0e0" },
                                     },
-                                }}
+                                    isDisabled
+                                        ? {}
+                                        : isSelected
+                                            ? {
+                                                background: 'grey.200 !important',
+                                                color: '#111',
+                                                borderColor: 'grey.400',
+                                                '&:active': {
+                                                    background: 'grey.200 !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.400',
+                                                },
+                                                '&:focus-visible': {
+                                                    background: 'grey.200 !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.400',
+                                                },
+                                            }
+                                            : {
+                                                background: '#fff !important',
+                                                color: '#111',
+                                                borderColor: 'grey.300',
+                                                '&:active': {
+                                                    background: '#fff !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.300',
+                                                },
+                                                '&:focus-visible': {
+                                                    background: '#fff !important',
+                                                    color: '#111',
+                                                    borderColor: 'grey.300',
+                                                },
+                                            },
+                                ]}
+                                tabIndex={isDisabled ? -1 : 0}
+                                aria-disabled={isDisabled}
                             >
                                 {slotLabel}
                             </Box>
@@ -334,77 +610,46 @@ export const BookingScheduler = () => {
         );
     };
 
-    // Render the weekly view showing all days in the current week
-    const renderWeeklyView = () => {
-        const startDate = startOfWeek(selectedDate);
-        const days = [];
-
-        for (let i = 0; i < 7; i++) {
-            const currentDate = addDays(startDate, i);
-            const isToday = format(currentDate, 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd');
-            days.push(
-                <Box
-                    sx={{ width: { xs: '100%', sm: '50%', md: '33.33%', lg: '25%' } }}
-                    key={currentDate.toISOString()}
-                >
-                    <Card
-                        sx={{
-                            height: '100%',
-                            transition: 'all 0.2s ease-in-out',
-                            '&:hover': {
-                                transform: 'translateY(-2px)',
-                                boxShadow: theme.shadows[4],
-                            },
-                            border: isToday ? `2px solid ${theme.palette.primary.main}` : 'none',
-                        }}
-                    >
-                        <CardContent>
-                            <Typography
-                                variant="h6"
-                                sx={{
-                                    color: isToday
-                                        ? theme.palette.primary.main
-                                        : theme.palette.text.primary,
-                                    fontWeight: isToday ? 600 : 400,
-                                    mb: 1,
-                                }}
-                            >
-                                {format(currentDate, 'EEEE, MMM d')}
-                            </Typography>
-                            <Typography
-                                variant="body2"
-                                sx={{
-                                    color: theme.palette.text.secondary,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: 0.5,
-                                }}
-                            >
-                                {
-                                    bookings.filter(
-                                        (b) => b.date === format(currentDate, 'yyyy-MM-dd')
-                                    ).length
-                                }{' '}
-                                bookings
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Box>
-            );
-        }
-
-        return <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>{days}</Box>;
-    };
-
     return (
         <Paper
             elevation={0}
             sx={{
-                p: 3,
+                p: { xs: 2, md: 4 },
                 borderRadius: 2,
-                background: theme.palette.background.default,
+                background: theme.palette.background.paper,
+                minHeight: '80vh',
             }}
         >
+            {/* Loading indicator */}
+            {isLoadingBookings && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
+                    <Typography variant="body2" color="text.secondary">
+                        Loading your bookings...
+                    </Typography>
+                </Box>
+            )}
+
+            {/* Header section */}
+            <Box sx={{ mb: 4 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                        Book Your Gym Session
+                    </Typography>
+                    {currentUser && currentUser.role === 'USER' && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/dashboard')}
+                            sx={{ textTransform: 'none', fontWeight: 500 }}
+                        >
+                            View Dashboard
+                        </Button>
+                    )}
+                </Box>
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week.
+                </Typography>
+            </Box>
+
             {/* User's upcoming bookings section */}
             {currentUser && userBookings.length > 0 && (
                 <Box sx={{ mb: 4 }}>
@@ -474,27 +719,6 @@ export const BookingScheduler = () => {
                 </Box>
             )}
 
-            {/* View mode tabs (Daily/Weekly) */}
-            <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
-                <Tabs
-                    value={viewMode}
-                    onChange={handleViewModeChange}
-                    sx={{
-                        '& .MuiTab-root': {
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            fontSize: '1rem',
-                        },
-                        '& .Mui-selected': {
-                            color: theme.palette.primary.main,
-                        },
-                    }}
-                >
-                    <Tab label="Daily" value="daily" />
-                    <Tab label="Weekly" value="weekly" />
-                </Tabs>
-            </Box>
-
             {/* Main content area: calendar and slot grid side by side */}
             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, alignItems: 'flex-start' }}>
                 {/* Calendar section */}
@@ -546,14 +770,17 @@ export const BookingScheduler = () => {
                         overflowX: 'auto',
                     }}
                 >
-                    {viewMode === 'daily' ? renderDailyView() : renderWeeklyView()}
+                    {renderDailyView()}
                 </Box>
             </Box>
 
             {/* Booking confirmation dialog */}
             <Dialog
                 open={isBookingDialogOpen}
-                onClose={() => setIsBookingDialogOpen(false)}
+                onClose={() => {
+                    setIsBookingDialogOpen(false);
+                    setBookingError(null);
+                }}
                 PaperProps={{
                     sx: {
                         borderRadius: 2,
@@ -567,10 +794,21 @@ export const BookingScheduler = () => {
                         Are you sure you want to book the slot {selectedSlot} on{' '}
                         {format(selectedDate, 'MMMM d, yyyy')}?
                     </Typography>
+                    {bookingError && (
+                        <Typography
+                            color="error"
+                            sx={{ mt: 2, fontSize: '0.875rem' }}
+                        >
+                            {bookingError}
+                        </Typography>
+                    )}
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
                     <Button
-                        onClick={() => setIsBookingDialogOpen(false)}
+                        onClick={() => {
+                            setIsBookingDialogOpen(false);
+                            setBookingError(null);
+                        }}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
@@ -581,13 +819,14 @@ export const BookingScheduler = () => {
                     <Button
                         onClick={handleBookingConfirm}
                         variant="contained"
+                        disabled={!!bookingError}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
                             px: 3,
                         }}
                     >
-                        Confirm
+                        {isBookingLoading ? <CircularProgress size={20} color="inherit" /> : 'Confirm'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -623,13 +862,14 @@ export const BookingScheduler = () => {
                         onClick={handleConfirmRemove}
                         variant="contained"
                         color="error"
+                        disabled={isRemoveLoading}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
                             px: 3,
                         }}
                     >
-                        Cancel Booking
+                        {isRemoveLoading ? <CircularProgress size={20} color="inherit" /> : 'Cancel Booking'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -666,13 +906,14 @@ export const BookingScheduler = () => {
                         onClick={handleConfirmReset}
                         variant="contained"
                         color="error"
+                        disabled={isResetLoading}
                         sx={{
                             textTransform: 'none',
                             fontWeight: 500,
                             px: 3,
                         }}
                     >
-                        Reset All
+                        {isResetLoading ? <CircularProgress size={20} color="inherit" /> : 'Reset All'}
                     </Button>
                 </DialogActions>
             </Dialog>

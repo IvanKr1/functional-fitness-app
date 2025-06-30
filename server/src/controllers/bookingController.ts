@@ -11,29 +11,14 @@ export const getBookings = async (req: AuthenticatedRequest, res: Response): Pro
         const { user } = req
         const { startDate, endDate, status, limit } = req.query
 
-        let bookings
+        // Always only return bookings for the current user, regardless of role
+        const options: any = {}
+        if (startDate) options.startDate = new Date(startDate as string)
+        if (endDate) options.endDate = new Date(endDate as string)
+        if (status) options.status = status
+        if (limit) options.limit = parseInt(limit as string)
 
-        if (user!.role === 'ADMIN') {
-            // Admin can see all bookings or filter by userId
-            const { userId } = req.query
-            const options: any = {}
-            if (startDate) options.startDate = new Date(startDate as string)
-            if (endDate) options.endDate = new Date(endDate as string)
-            if (status) options.status = status
-            if (userId) options.userId = userId as string
-            if (limit) options.limit = parseInt(limit as string)
-
-            bookings = await bookingService.getAllBookings(options)
-        } else {
-            // Regular user can only see their own bookings
-            const options: any = {}
-            if (startDate) options.startDate = new Date(startDate as string)
-            if (endDate) options.endDate = new Date(endDate as string)
-            if (status) options.status = status
-            if (limit) options.limit = parseInt(limit as string)
-
-            bookings = await bookingService.getUserBookings(user!.id, options)
-        }
+        const bookings = await bookingService.getUserBookings(user!.id, options)
 
         res.status(200).json({
             success: true,
@@ -171,6 +156,37 @@ export const getUsersMissingThisWeek = async (req: AuthenticatedRequest, res: Re
         res.status(400).json({
             success: false,
             error: error instanceof Error ? error.message : 'Failed to retrieve users missing bookings'
+        })
+    }
+}
+
+/**
+ * Delete all bookings for a user endpoint (marks as CANCELLED)
+ */
+export const deleteAllUserBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { user } = req
+        const { userId } = req.params
+
+        if (!userId) {
+            throw new Error('User ID is required')
+        }
+
+        const deletedCount = await bookingService.deleteAllUserBookings(
+            userId,
+            user!.id,
+            user!.role
+        )
+
+        res.status(200).json({
+            success: true,
+            data: { deletedCount },
+            message: `Successfully cancelled ${deletedCount} booking${deletedCount !== 1 ? 's' : ''}`
+        })
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to cancel bookings'
         })
     }
 }

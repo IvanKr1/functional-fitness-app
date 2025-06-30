@@ -34,8 +34,8 @@ const getWeekBounds = (date: Date): { start: Date; end: Date } => {
 const isWithinBookingHours = (startTime: Date, endTime: Date): boolean => {
     const startHour = startTime.getHours()
     const endHour = endTime.getHours()
-
-    return startHour >= 7 && endHour <= 20 && startTime < endTime
+    // Allow slots starting at 7:00 up to 20:00, ending at 21:00
+    return startHour >= 7 && startHour <= 20 && endHour === startHour + 1 && endHour <= 21 && startTime < endTime
 }
 
 /**
@@ -251,7 +251,7 @@ export const updateBooking = async (
 }
 
 /**
- * Delete/cancel booking
+ * Delete/cancel booking (now hard delete)
  */
 export const deleteBooking = async (
     bookingId: string,
@@ -271,10 +271,9 @@ export const deleteBooking = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Instead of deleting, mark as cancelled to maintain records
-    await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status: BookingStatus.CANCELLED }
+    // Hard delete
+    await prisma.booking.delete({
+        where: { id: bookingId }
     })
 }
 
@@ -299,7 +298,11 @@ export const getUserBookings = async (
     const bookings = await prisma.booking.findMany({
         where: {
             userId,
-            ...(options?.status && { status: options.status }),
+            // Only show active bookings by default, unless status is explicitly specified
+            ...(options?.status
+                ? { status: options.status }
+                : { status: { not: BookingStatus.CANCELLED } }
+            ),
             ...(options?.startDate && options?.endDate && {
                 startTime: {
                     gte: options.startDate,
@@ -449,4 +452,34 @@ export const getUsersWithoutBookingsThisWeek = async (): Promise<Array<{
     })
 
     return usersWithoutBookings
+}
+
+/**
+ * Delete all bookings for a user (now hard delete)
+ */
+export const deleteAllUserBookings = async (
+    userId: string,
+    requestingUserId: string,
+    requestingUserRole: Role
+): Promise<number> => {
+    // Check authorization - users can only delete their own bookings, admins can delete any user's
+    if (requestingUserRole !== Role.ADMIN && requestingUserId !== userId) {
+        throw new AuthorizationError('You can only delete your own bookings')
+    }
+
+    // Get all bookings for the user
+    const bookings = await prisma.booking.findMany({
+        where: { userId }
+    })
+
+    if (bookings.length === 0) {
+        return 0
+    }
+
+    // Hard delete all
+    await prisma.booking.deleteMany({
+        where: { userId }
+    })
+
+    return bookings.length
 } 
