@@ -7,6 +7,7 @@ import { AdminPage } from './pages/AdminPage';
 import { UserManagementPage } from './pages/UserManagementPage';
 import { UsersToPayPage } from './pages/UsersToPayPage';
 import { TodayBookingsPage } from './pages/TodayBookingsPage';
+import { UserDashboard } from './pages/UserDashboard';
 import { BookingScheduler } from './components/Booking/BookingScheduler';
 import { useStore } from './store/useStore';
 
@@ -67,6 +68,16 @@ export const App = () => {
                                     <Route path="/settings" element={<div>Settings Page</div>} />
                                 </Routes>
                             </AdminLayout>
+                        </PrivateRoute>
+                    }
+                />
+                <Route
+                    path="/dashboard"
+                    element={
+                        <PrivateRoute>
+                            <ConditionalLayout>
+                                <UserDashboard />
+                            </ConditionalLayout>
                         </PrivateRoute>
                     }
                 />

@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
-import { AppBar, Box, Container, Toolbar, Typography, Button } from '@mui/material';
-import { useNavigate } from 'react-router-dom';
+import { AppBar, Box, Container, Toolbar, Typography, Button, Tabs, Tab } from '@mui/material';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 
 interface MainLayoutProps {
@@ -9,11 +9,21 @@ interface MainLayoutProps {
 
 export const MainLayout = ({ children }: MainLayoutProps) => {
     const navigate = useNavigate();
+    const location = useLocation();
     const { currentUser, logout } = useStore();
 
     const handleLogout = async () => {
         await logout();
         navigate('/login');
+    };
+
+    const handleTabChange = (_: React.SyntheticEvent, newValue: string) => {
+        navigate(newValue);
+    };
+
+    const getCurrentTab = () => {
+        if (location.pathname === '/dashboard') return '/dashboard';
+        return '/';
     };
 
     return (
@@ -34,6 +44,24 @@ export const MainLayout = ({ children }: MainLayoutProps) => {
                         </>
                     )}
                 </Toolbar>
+                {currentUser && currentUser.role === 'USER' && (
+                    <Tabs 
+                        value={getCurrentTab()} 
+                        onChange={handleTabChange}
+                        sx={{ 
+                            backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                            '& .MuiTab-root': {
+                                color: 'rgba(255, 255, 255, 0.7)',
+                                '&.Mui-selected': {
+                                    color: 'white',
+                                },
+                            },
+                        }}
+                    >
+                        <Tab label="Dashboard" value="/dashboard" />
+                        <Tab label="Book Training" value="/" />
+                    </Tabs>
+                )}
             </AppBar>
             <Container component="main" sx={{ flexGrow: 1, py: 4 }}>
                 {children}

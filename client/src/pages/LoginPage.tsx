@@ -23,7 +23,7 @@ export const LoginPage = () => {
     // Redirect if already authenticated
     useEffect(() => {
         if (isAuthenticated && currentUser) {
-            navigate(currentUser.role === 'ADMIN' ? '/admin/users' : '/');
+            navigate(currentUser.role === 'ADMIN' ? '/admin/users' : '/dashboard');
         }
     }, [isAuthenticated, currentUser, navigate]);
 

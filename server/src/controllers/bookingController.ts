@@ -11,29 +11,14 @@ export const getBookings = async (req: AuthenticatedRequest, res: Response): Pro
         const { user } = req
         const { startDate, endDate, status, limit } = req.query
 
-        let bookings
+        // Always only return bookings for the current user, regardless of role
+        const options: any = {}
+        if (startDate) options.startDate = new Date(startDate as string)
+        if (endDate) options.endDate = new Date(endDate as string)
+        if (status) options.status = status
+        if (limit) options.limit = parseInt(limit as string)
 
-        if (user!.role === 'ADMIN') {
-            // Admin can see all bookings or filter by userId
-            const { userId } = req.query
-            const options: any = {}
-            if (startDate) options.startDate = new Date(startDate as string)
-            if (endDate) options.endDate = new Date(endDate as string)
-            if (status) options.status = status
-            if (userId) options.userId = userId as string
-            if (limit) options.limit = parseInt(limit as string)
-
-            bookings = await bookingService.getAllBookings(options)
-        } else {
-            // Regular user can only see their own bookings
-            const options: any = {}
-            if (startDate) options.startDate = new Date(startDate as string)
-            if (endDate) options.endDate = new Date(endDate as string)
-            if (status) options.status = status
-            if (limit) options.limit = parseInt(limit as string)
-
-            bookings = await bookingService.getUserBookings(user!.id, options)
-        }
+        const bookings = await bookingService.getUserBookings(user!.id, options)
 
         res.status(200).json({
             success: true,

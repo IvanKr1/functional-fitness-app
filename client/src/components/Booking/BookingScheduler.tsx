@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Box,
     Button,
@@ -29,6 +30,7 @@ const MAX_BOOKINGS_PER_SLOT = 10;
 
 export const BookingScheduler = () => {
     const theme = useTheme();
+    const navigate = useNavigate();
     const { currentUser, bookings, addBooking, removeBooking, setBookings } = useStore();
     const [selectedDate, setSelectedDate] = useState<Date>(new Date());
     const [viewMode, setViewMode] = useState<ViewMode>('daily');
@@ -629,9 +631,20 @@ export const BookingScheduler = () => {
 
             {/* Header section */}
             <Box sx={{ mb: 4 }}>
-                <Typography variant="h4" sx={{ fontWeight: 600, mb: 1 }}>
-                    Book Your Gym Session
-                </Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                        Book Your Gym Session
+                    </Typography>
+                    {currentUser && currentUser.role === 'USER' && (
+                        <Button
+                            variant="outlined"
+                            onClick={() => navigate('/dashboard')}
+                            sx={{ textTransform: 'none', fontWeight: 500 }}
+                        >
+                            View Dashboard
+                        </Button>
+                    )}
+                </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                     Select a date and time slot to book your fitness session. You can book up to 3 sessions per week.
                 </Typography>

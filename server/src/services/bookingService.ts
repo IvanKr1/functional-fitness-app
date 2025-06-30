@@ -251,7 +251,7 @@ export const updateBooking = async (
 }
 
 /**
- * Delete/cancel booking
+ * Delete/cancel booking (now hard delete)
  */
 export const deleteBooking = async (
     bookingId: string,
@@ -271,10 +271,9 @@ export const deleteBooking = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Instead of deleting, mark as cancelled to maintain records
-    await prisma.booking.update({
-        where: { id: bookingId },
-        data: { status: BookingStatus.CANCELLED }
+    // Hard delete
+    await prisma.booking.delete({
+        where: { id: bookingId }
     })
 }
 
@@ -456,7 +455,7 @@ export const getUsersWithoutBookingsThisWeek = async (): Promise<Array<{
 }
 
 /**
- * Delete all bookings for a user (marks as CANCELLED)
+ * Delete all bookings for a user (now hard delete)
  */
 export const deleteAllUserBookings = async (
     userId: string,
@@ -468,32 +467,19 @@ export const deleteAllUserBookings = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Get all active bookings for the user
-    const activeBookings = await prisma.booking.findMany({
-        where: {
-            userId,
-            status: {
-                not: BookingStatus.CANCELLED
-            }
-        }
+    // Get all bookings for the user
+    const bookings = await prisma.booking.findMany({
+        where: { userId }
     })
 
-    if (activeBookings.length === 0) {
+    if (bookings.length === 0) {
         return 0
     }
 
-    // Mark all bookings as cancelled
-    await prisma.booking.updateMany({
-        where: {
-            userId,
-            status: {
-                not: BookingStatus.CANCELLED
-            }
-        },
-        data: {
-            status: BookingStatus.CANCELLED
-        }
+    // Hard delete all
+    await prisma.booking.deleteMany({
+        where: { userId }
     })
 
-    return activeBookings.length
+    return bookings.length
 } 
