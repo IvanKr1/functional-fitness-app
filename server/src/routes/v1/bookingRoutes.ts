@@ -60,4 +60,11 @@ router.get('/missing-this-week',
     asyncHandler(bookingController.getUsersMissingThisWeek)
 )
 
+// POST /bookings/mark-completed - Mark past bookings as completed (admin only)
+router.post('/mark-completed',
+    authenticateToken,
+    requireAdmin,
+    asyncHandler(bookingController.markPastBookingsCompleted)
+)
+
 export default router 
