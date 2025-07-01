@@ -13,6 +13,13 @@ interface User {
   lastPaymentDate?: string
   nextPaymentDueDate?: string
   notes?: string
+  attendedBookingDates?: string[]
+  upcomingBookings?: {
+    id: string
+    startTime: string
+    status: string
+    notes?: string
+  }[]
 }
 
 interface EditUserFormProps {
@@ -68,20 +75,27 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [isPaymentPaid, setIsPaymentPaid] = useState(false)
+  const [fullUser, setFullUser] = useState<User | null>(user)
 
   useEffect(() => {
     if (user) {
-      setFormData({
-        name: user.name,
-        email: user.email,
-        mobilePhone: user.mobilePhone || '',
-        weeklyBookingLimit: user.weeklyBookingLimit,
-        lastPaymentDate: user.lastPaymentDate ? new Date(user.lastPaymentDate).toISOString() : '',
-        nextPaymentDueDate: user.nextPaymentDueDate ? new Date(user.nextPaymentDueDate).toISOString() : ''
-      })
-      // Always start unchecked
-      setIsPaymentPaid(false)
+      apiService.get<{ success: boolean; data?: { user: User }; error?: string }>(`/users/${user.id}`)
+        .then(res => {
+          if (res.success && res.data?.user) {
+            setFullUser(res.data.user)
+            setFormData({
+              name: res.data.user.name,
+              email: res.data.user.email,
+              mobilePhone: res.data.user.mobilePhone || '',
+              weeklyBookingLimit: res.data.user.weeklyBookingLimit,
+              lastPaymentDate: res.data.user.lastPaymentDate ? new Date(res.data.user.lastPaymentDate).toISOString() : '',
+              nextPaymentDueDate: res.data.user.nextPaymentDueDate ? new Date(res.data.user.nextPaymentDueDate).toISOString() : ''
+            })
+          }
+        })
     }
+    // Always start unchecked
+    setIsPaymentPaid(false)
   }, [user])
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -121,22 +135,22 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!user) return
+    if (!fullUser) return
 
     setIsLoading(true)
     setError(null)
 
     try {
       // First update user information
-      const updateResponse = await apiService.patch<UpdateUserResponse>(`/users/${user.id}`, formData)
+      const updateResponse = await apiService.patch<UpdateUserResponse>(`/users/${fullUser.id}`, formData)
       
       if (!updateResponse.success) {
         throw new Error(updateResponse.error || 'Failed to update user')
       }
 
       // If payment is marked as paid, record the payment
-      if (isPaymentPaid && user.role !== 'ADMIN') {
-        const paymentResponse = await apiService.post<RecordPaymentResponse>(`/payments/${user.id}`, {
+      if (isPaymentPaid && fullUser.role !== 'ADMIN') {
+        const paymentResponse = await apiService.post<RecordPaymentResponse>(`/payments/${fullUser.id}`, {
           amount: 50.00, // Fixed amount
           currency: 'EUR',
           notes: 'Payment recorded via admin panel'
@@ -164,26 +178,6 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
     })
   }
 
-  const getPaymentStatus = () => {
-    if (!user?.nextPaymentDueDate) return 'No payment record'
-    
-    const dueDate = new Date(user.nextPaymentDueDate)
-    const now = new Date()
-    const daysUntilDue = Math.ceil((dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
-    
-    if (daysUntilDue < 0) {
-      return `Overdue by ${Math.abs(daysUntilDue)} days`
-    } else if (daysUntilDue === 0) {
-      return 'Due today'
-    } else if (daysUntilDue === 1) {
-      return 'Due tomorrow'
-    } else if (daysUntilDue <= 7) {
-      return `Due in ${daysUntilDue} days`
-    } else {
-      return `Due in ${daysUntilDue} days`
-    }
-  }
-
   const getCalculatedNextDueDate = () => {
     if (!formData.lastPaymentDate) return 'Not set'
     
@@ -208,7 +202,9 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
     return new Date(isoString).toISOString().split('T')[0]
   }
 
-  if (!user) return null
+  if (!fullUser) return null
+
+  console.log('fullUser.attendedBookingDates', fullUser.attendedBookingDates)
 
   return (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-50">
@@ -338,11 +334,11 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-700">When User Needs to Pay:</span>
                 <span className={`text-sm font-medium ${
-                  user.nextPaymentDueDate && new Date(user.nextPaymentDueDate) < new Date()
+                  fullUser.nextPaymentDueDate && new Date(fullUser.nextPaymentDueDate) < new Date()
                     ? 'text-red-600'
                     : 'text-green-600'
                 }`}>
-                  {user.nextPaymentDueDate ? formatDate(user.nextPaymentDueDate) : 'No payment record'}
+                  {fullUser.nextPaymentDueDate ? formatDate(fullUser.nextPaymentDueDate) : 'No payment record'}
                 </span>
               </div>
 
@@ -367,7 +363,7 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                 </div>
               )}
 
-              {user.role !== 'ADMIN' && (
+              {fullUser.role !== 'ADMIN' && (
                 <div className="flex items-center">
                   <input
                     type="checkbox"
@@ -393,27 +389,57 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
               <div>
-                <span className="font-medium text-gray-700">User ID:</span>
-                <span className="ml-2 text-gray-600">{user.id}</span>
-              </div>
-              <div>
                 <span className="font-medium text-gray-700">Role:</span>
                 <span className={`ml-2 inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                  user.role === 'ADMIN' 
+                  fullUser.role === 'ADMIN' 
                     ? 'bg-purple-100 text-purple-800' 
                     : 'bg-green-100 text-green-800'
                 }`}>
-                  {user.role}
+                  {fullUser.role}
                 </span>
               </div>
               <div>
                 <span className="font-medium text-gray-700">Created:</span>
-                <span className="ml-2 text-gray-600">{formatDate(user.createdAt)}</span>
+                <span className="ml-2 text-gray-600">{formatDate(fullUser.createdAt)}</span>
               </div>
-              {user.notes && (
+              {fullUser.notes && (
                 <div className="md:col-span-2">
                   <span className="font-medium text-gray-700">Notes:</span>
-                  <span className="ml-2 text-gray-600">{user.notes}</span>
+                  <span className="ml-2 text-gray-600">{fullUser.notes}</span>
+                </div>
+              )}
+              {/* Attended Booking Dates (last 30 days) */}
+              {(fullUser.attendedBookingDates ?? []).length > 0 && (
+                <div className="md:col-span-2">
+                  <span className="font-medium text-gray-700">Attended (last 30 days):</span>
+                  <span className="ml-2 text-gray-600">
+                    {(fullUser.attendedBookingDates ?? []).map((date, idx, arr) => (
+                      <span key={date}>
+                        {formatDate(date)}{idx < arr.length - 1 ? ', ' : ''}
+                      </span>
+                    ))}
+                  </span>
+                </div>
+              )}
+              {/* Upcoming Bookings */}
+              {fullUser.upcomingBookings && fullUser.upcomingBookings.length > 0 && (
+                <div className="md:col-span-2 mt-2">
+                  <span className="font-medium text-gray-700">Upcoming Bookings:</span>
+                  <ul className="ml-2 text-gray-600 list-disc list-inside">
+                    {fullUser.upcomingBookings.map((booking) => (
+                      <li key={booking.id}>
+                        {formatDate(booking.startTime)}{' '}
+                        {booking.status && (
+                          <span className="ml-1 text-xs px-2 py-0.5 rounded bg-blue-100 text-blue-800">
+                            {booking.status}
+                          </span>
+                        )}
+                        {booking.notes && (
+                          <span className="ml-2 italic text-gray-500">{booking.notes}</span>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
             </div>

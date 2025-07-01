@@ -8,6 +8,8 @@ import {
     UpdateUserNotesRequest,
     RegisterRequest
 } from '../types/index.js'
+import { getUserAttendanceRecords } from './attendanceService.js'
+import { getUserBookings } from './bookingService.js'
 
 /**
  * Generate a random 7-character password for new users
@@ -87,6 +89,7 @@ export const registerUser = async (userData: RegisterRequest): Promise<{
             name: user.name,
             email: user.email,
             role: user.role,
+            password,
             ...(user.mobilePhone && { mobilePhone: user.mobilePhone }),
             weeklyBookingLimit: user.weeklyBookingLimit
         }
@@ -156,6 +159,14 @@ export const getUserById = async (
     lastPaymentDate?: Date | undefined
     nextPaymentDueDate?: Date | null
     notes?: string | undefined
+    attendedBookingDates?: Date[]
+    upcomingBookings?: Array<{
+        id: string
+        startTime: Date
+        endTime: Date
+        status: string
+        notes?: string | null
+    }>
 }> => {
     // Users can only view their own profile, admins can view any
     if (requestingUserRole !== Role.ADMIN && userId !== requestingUserId) {
@@ -182,6 +193,24 @@ export const getUserById = async (
         throw new ValidationError('User not found')
     }
 
+    // Get attendance records for the last 30 days
+    const now = new Date()
+    const thirtyDaysAgo = new Date(now)
+    thirtyDaysAgo.setDate(now.getDate() - 30)
+    const attendanceRecords = await getUserAttendanceRecords(userId, {
+        startDate: thirtyDaysAgo,
+        endDate: now
+    })
+    const attendedBookingDates = attendanceRecords
+        .filter(record => record.attended && record.booking.status !== 'CANCELLED')
+        .map(record => record.booking.startTime)
+
+    // Get upcoming bookings
+    const upcomingBookings = await getUserBookings(userId, {
+        startDate: now,
+        status: 'CONFIRMED'
+    })
+
     return {
         id: user.id,
         name: user.name,
@@ -192,7 +221,9 @@ export const getUserById = async (
         lastPaymentDate: user.lastPaymentDate || undefined,
         nextPaymentDueDate: user.nextPaymentDueDate || null,
         notes: user.notes || undefined,
-        createdAt: user.createdAt
+        createdAt: user.createdAt,
+        attendedBookingDates,
+        upcomingBookings
     }
 }
 

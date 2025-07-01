@@ -136,6 +136,14 @@ export const createBooking = async (
     const startTime = new Date(startTimeStr)
     const endTime = new Date(endTimeStr)
 
+    // Enforce booking at least 2 hours in advance
+    const nowCreate = new Date()
+    const diffMs = startTime.getTime() - nowCreate.getTime()
+    const diffHours = diffMs / (1000 * 60 * 60)
+    if (diffHours < 2) {
+        throw new ValidationError('Bookings must be scheduled at least 2 hours in advance')
+    }
+
     // Validate time slot
     if (!isWithinBookingHours(startTime, endTime)) {
         const dayOfWeek = startTime.getDay()
@@ -357,6 +365,16 @@ export const deleteBooking = async (
     // Check authorization
     if (userRole !== Role.ADMIN && booking.userId !== userId) {
         throw new AuthorizationError('You can only delete your own bookings')
+    }
+
+    // Enforce cancellation at least 2 hours before start time (unless admin)
+    if (userRole !== Role.ADMIN) {
+        const nowDelete = new Date()
+        const diffMs = booking.startTime.getTime() - nowDelete.getTime()
+        const diffHours = diffMs / (1000 * 60 * 60)
+        if (diffHours < 2) {
+            throw new ValidationError('Bookings can only be cancelled at least 2 hours before the start time')
+        }
     }
 
     // Mark as cancelled instead of hard delete
@@ -616,4 +634,4 @@ export const markPastBookingsAsCompleted = async (): Promise<number> => {
 
     console.log(`📅 Booking Service: Found ${pastBookings.length} past booking${pastBookings.length !== 1 ? 's' : ''} to mark as completed`)
     return pastBookings.length
-} 
+}
