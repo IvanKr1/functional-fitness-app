@@ -29,13 +29,44 @@ const getWeekBounds = (date: Date): { start: Date; end: Date } => {
 }
 
 /**
- * Check if a time slot is within allowed booking hours (07:00 - 20:00)
+ * Check if a time slot is within allowed booking hours
+ * Monday-Friday: 07:00 - 20:00 (ending at 21:00)
+ * Saturday: 07:00 - 10:00 (ending at 11:00)
+ * Sunday: No bookings allowed
  */
 const isWithinBookingHours = (startTime: Date, endTime: Date): boolean => {
+    const dayOfWeek = startTime.getDay()
     const startHour = startTime.getHours()
     const endHour = endTime.getHours()
-    // Allow slots starting at 7:00 up to 20:00, ending at 21:00
+
+    // No bookings on Sunday
+    if (dayOfWeek === 0) {
+        return false
+    }
+
+    // Saturday: allow slots starting at 7:00 up to 10:00, ending at 11:00
+    if (dayOfWeek === 6) {
+        return startHour >= 7 && startHour <= 10 && endHour === startHour + 1 && endHour <= 11 && startTime < endTime
+    }
+
+    // Monday-Friday: allow slots starting at 7:00 up to 20:00, ending at 21:00
     return startHour >= 7 && startHour <= 20 && endHour === startHour + 1 && endHour <= 21 && startTime < endTime
+}
+
+/**
+ * Check if booking is within 2-week advance booking limit
+ */
+const isWithinBookingWindow = (startTime: Date): boolean => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0) // Start of today
+
+    const twoWeeksFromNow = new Date(today)
+    twoWeeksFromNow.setDate(today.getDate() + 14) // 2 weeks from today
+
+    const bookingDate = new Date(startTime)
+    bookingDate.setHours(0, 0, 0, 0) // Start of booking day
+
+    return bookingDate >= today && bookingDate <= twoWeeksFromNow
 }
 
 /**
@@ -107,7 +138,19 @@ export const createBooking = async (
 
     // Validate time slot
     if (!isWithinBookingHours(startTime, endTime)) {
-        throw new ValidationError('Bookings must be between 07:00 and 20:00')
+        const dayOfWeek = startTime.getDay()
+        if (dayOfWeek === 0) {
+            throw new ValidationError('Bookings are not available on Sundays')
+        } else if (dayOfWeek === 6) {
+            throw new ValidationError('Saturday bookings must be between 07:00 and 10:00')
+        } else {
+            throw new ValidationError('Bookings must be between 07:00 and 20:00')
+        }
+    }
+
+    // Check if booking is within 2-week advance booking limit
+    if (!isWithinBookingWindow(startTime)) {
+        throw new ValidationError('You can only book up to 2 weeks in advance')
     }
 
     // Check if booking is in the future
@@ -116,8 +159,33 @@ export const createBooking = async (
         throw new ValidationError('Cannot book sessions in the past')
     }
 
-    // Check daily limit (1 session per day)
-    const hasDailyBooking = await hasBookingOnSameDay(userId, startTime)
+    // Check for a cancelled booking for the same user and day
+    const dayStart = new Date(startTime)
+    dayStart.setHours(0, 0, 0, 0)
+    const dayEnd = new Date(startTime)
+    dayEnd.setHours(23, 59, 59, 999)
+    const cancelledBooking = await prisma.booking.findFirst({
+        where: {
+            userId,
+            startTime: {
+                gte: dayStart,
+                lte: dayEnd
+            },
+            status: BookingStatus.CANCELLED
+        }
+    })
+
+    // Check daily limit (1 session per day, but allow updating a cancelled booking)
+    const hasDailyBooking = await prisma.booking.findFirst({
+        where: {
+            userId,
+            startTime: {
+                gte: dayStart,
+                lte: dayEnd
+            },
+            status: { not: BookingStatus.CANCELLED }
+        }
+    })
     if (hasDailyBooking) {
         throw new BookingConflictError('You already have a booking on this day')
     }
@@ -132,12 +200,32 @@ export const createBooking = async (
         throw new ValidationError('User not found')
     }
 
-    // Check weekly limit
+    // Check weekly limit (count only CONFIRMED/COMPLETED, not CANCELLED)
     const weeklyCount = await getUserWeeklyBookingCount(userId, startTime)
     if (weeklyCount >= user.weeklyBookingLimit) {
         throw new BookingConflictError(
             `Weekly booking limit reached (${user.weeklyBookingLimit} sessions per week)`
         )
+    }
+
+    if (cancelledBooking) {
+        // Update the cancelled booking to CONFIRMED with new time/notes
+        const updated = await prisma.booking.update({
+            where: { id: cancelledBooking.id },
+            data: {
+                startTime,
+                endTime,
+                notes: notes || null,
+                status: BookingStatus.CONFIRMED
+            }
+        })
+        return {
+            id: updated.id,
+            startTime: updated.startTime,
+            endTime: updated.endTime,
+            status: updated.status,
+            notes: updated.notes || undefined
+        }
     }
 
     // Create booking
@@ -271,9 +359,10 @@ export const deleteBooking = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Hard delete
-    await prisma.booking.delete({
-        where: { id: bookingId }
+    // Mark as cancelled instead of hard delete
+    await prisma.booking.update({
+        where: { id: bookingId },
+        data: { status: BookingStatus.CANCELLED }
     })
 }
 
@@ -354,6 +443,8 @@ export const getAllBookings = async (
                     lte: options.endDate
                 }
             })
+            // Removed the default filter to exclude cancelled bookings
+            // Now all bookings (including cancelled) will be returned by default
         },
         include: {
             user: {
@@ -455,7 +546,7 @@ export const getUsersWithoutBookingsThisWeek = async (): Promise<Array<{
 }
 
 /**
- * Delete all bookings for a user (now hard delete)
+ * Cancel all bookings for a user (mark as cancelled)
  */
 export const deleteAllUserBookings = async (
     userId: string,
@@ -467,19 +558,62 @@ export const deleteAllUserBookings = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Get all bookings for the user
+    // Get all active bookings for the user
     const bookings = await prisma.booking.findMany({
-        where: { userId }
+        where: {
+            userId,
+            status: { not: BookingStatus.CANCELLED }
+        }
     })
 
     if (bookings.length === 0) {
         return 0
     }
 
-    // Hard delete all
-    await prisma.booking.deleteMany({
-        where: { userId }
+    // Mark all as cancelled
+    await prisma.booking.updateMany({
+        where: {
+            userId,
+            status: { not: BookingStatus.CANCELLED }
+        },
+        data: { status: BookingStatus.CANCELLED }
     })
 
     return bookings.length
+}
+
+/**
+ * Mark past bookings as completed
+ * This function should be called periodically (e.g., via cron job)
+ */
+export const markPastBookingsAsCompleted = async (): Promise<number> => {
+    const now = new Date()
+
+    // Find all confirmed bookings that have ended
+    const pastBookings = await prisma.booking.findMany({
+        where: {
+            status: BookingStatus.CONFIRMED,
+            endTime: {
+                lt: now
+            }
+        }
+    })
+
+    if (pastBookings.length === 0) {
+        return 0
+    }
+
+    // Mark all past bookings as completed
+    await prisma.booking.updateMany({
+        where: {
+            status: BookingStatus.CONFIRMED,
+            endTime: {
+                lt: now
+            }
+        },
+        data: { status: BookingStatus.COMPLETED }
+    })
+
+    console.log(`📅 Booking Service: Found ${pastBookings.length} past booking${pastBookings.length !== 1 ? 's' : ''} to mark as completed`)
+    return pastBookings.length
 } 

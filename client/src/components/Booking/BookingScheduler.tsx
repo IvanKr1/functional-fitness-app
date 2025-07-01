@@ -19,7 +19,7 @@ import {
 import { DateCalendar } from '@mui/x-date-pickers/DateCalendar';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
-import { format, addDays, startOfWeek, endOfWeek } from 'date-fns';
+import { format, addDays, startOfWeek, endOfWeek, addWeeks, isAfter, isBefore, isEqual } from 'date-fns';
 import { useStore } from '../../store/useStore';
 import { apiService } from '../../services/api.js';
 import type { ViewMode } from '../../types';
@@ -95,6 +95,14 @@ export const BookingScheduler = () => {
               .filter((booking) => booking.userId === currentUser.id)
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : [];
+
+    // Check if date is within 2-week advance booking limit
+    const isWithinBookingWindow = (date: Date) => {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0); // Start of today
+        const twoWeeksFromNow = addWeeks(today, 2);
+        return (isAfter(date, today) || isEqual(date, today)) && !isAfter(date, twoWeeksFromNow);
+    };
 
     // Get booking limits status
     const getBookingLimitsStatus = () => {
@@ -362,7 +370,16 @@ export const BookingScheduler = () => {
         let slotStart = new Date(selectedDate);
         slotStart.setHours(7, 0, 0, 0);
         const slotEndLimit = new Date(selectedDate);
-        slotEndLimit.setHours(21, 0, 0, 0); // Last slot ends at 21:00
+        
+        // Set end time based on day of week
+        if (selectedDate.getDay() === 6) {
+            // Saturday: last slot ends at 11:00 (so last booking starts at 10:00)
+            slotEndLimit.setHours(11, 0, 0, 0);
+        } else {
+            // Other days: last slot ends at 21:00
+            slotEndLimit.setHours(21, 0, 0, 0);
+        }
+        
         while (slotStart < slotEndLimit) {
             const slotEnd = new Date(slotStart.getTime() + slotDuration * 60000);
             // Only show if slot is available and within the same day
@@ -451,6 +468,16 @@ export const BookingScheduler = () => {
                 </Typography>
             );
         }
+
+        // Check if date is within 2-week advance booking window
+        if (!isWithinBookingWindow(selectedDate)) {
+            return (
+                <Typography color="error" sx={{ mt: 2, fontWeight: 500 }}>
+                    You can only book up to 2 weeks in advance.
+                </Typography>
+            );
+        }
+
         // Booking rules for disabling all slots
         const hasUserBookingForDay =
             currentUser &&
@@ -516,12 +543,21 @@ export const BookingScheduler = () => {
                         const slotKey = format(start, 'HH:mm') + ' - ' + format(end, 'HH:mm');
                         const isSelected = uiSelectedSlot === slotKey;
                         
-                        // Check if slot is disabled (past time or outside hours)
+                        // Check if slot is disabled (past time, outside hours, or beyond 2-week limit)
                         const now = new Date();
                         const isPastTime = start <= now;
                         const startHour = start.getHours();
-                        // Allow slots starting at 7:00 up to and including 20:00
-                        const isOutsideHours = startHour < 7 || startHour > 20;
+                        
+                        // Allow slots starting at 7:00 up to and including 20:00 (except Saturday)
+                        let isOutsideHours;
+                        if (selectedDate.getDay() === 6) {
+                            // Saturday: allow slots starting at 7:00 up to and including 10:00
+                            isOutsideHours = startHour < 7 || startHour > 10;
+                        } else {
+                            // Other days: allow slots starting at 7:00 up to and including 20:00
+                            isOutsideHours = startHour < 7 || startHour > 20;
+                        }
+                        
                         const isDisabled = isPastTime || isOutsideHours;
                         
                         const baseStyles = {
@@ -646,7 +682,7 @@ export const BookingScheduler = () => {
                     )}
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week.
+                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week, up to 2 weeks in advance. Saturday sessions end at 11 AM.
                 </Typography>
             </Box>
 
@@ -749,6 +785,12 @@ export const BookingScheduler = () => {
                             <DateCalendar
                                 value={selectedDate}
                                 onChange={handleDateChange}
+                                shouldDisableDate={(date) => {
+                                    // Disable Sundays
+                                    if (date.getDay() === 0) return true;
+                                    // Disable dates beyond 2-week advance booking limit
+                                    return !isWithinBookingWindow(date);
+                                }}
                                 sx={{
                                     '& .MuiPickersDay-root.Mui-selected': {
                                         backgroundColor: theme.palette.primary.main,

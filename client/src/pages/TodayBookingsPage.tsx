@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Search, ChevronLeft, ChevronRight, Filter } from 'lucide-react'
+import { Calendar, Clock, Search, ChevronLeft, ChevronRight, Filter, CheckCircle } from 'lucide-react'
 import { apiService } from '../services/api.js'
+import { useStore } from '../store/useStore.js'
 
 interface Booking {
   id: string
@@ -22,12 +23,15 @@ interface BookingsResponse {
 const ITEMS_PER_PAGE = 10
 
 export function TodayBookingsPage() {
+  const { currentUser } = useStore()
   const [bookings, setBookings] = useState<Booking[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
   const [selectedHour, setSelectedHour] = useState<string>('all')
+  const [selectedStatus, setSelectedStatus] = useState<string>('all')
+  const [isMarkingCompleted, setIsMarkingCompleted] = useState(false)
 
   const fetchTodayBookings = async () => {
     try {
@@ -69,21 +73,51 @@ export function TodayBookingsPage() {
     setCurrentPage(1) // Reset to first page when filtering
   }
 
+  const handleStatusFilterChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSelectedStatus(e.target.value)
+    setCurrentPage(1) // Reset to first page when filtering
+  }
+
   const handlePageChange = (page: number) => {
     setCurrentPage(page)
   }
 
-  // Filter bookings by search term and hour
+  const handleMarkCompleted = async () => {
+    try {
+      setIsMarkingCompleted(true)
+      setError(null)
+      
+      const response = await apiService.post<{
+        success: boolean
+        data?: { completedCount: number }
+        error?: string
+      }>('/bookings/mark-completed')
+
+      if (response.success && response.data) {
+        // Refresh the bookings list
+        await fetchTodayBookings()
+        console.log(`Marked ${response.data.completedCount} booking${response.data.completedCount !== 1 ? 's' : ''} as completed`)
+      } else {
+        setError(response.error || 'Failed to mark bookings as completed')
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to mark bookings as completed')
+    } finally {
+      setIsMarkingCompleted(false)
+    }
+  }
+
+  // Filter bookings by search term, hour, and status
   const filteredBookings = bookings.filter(booking => {
     const matchesSearch = booking.userName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          booking.userEmail.toLowerCase().includes(searchTerm.toLowerCase())
     
-    if (selectedHour === 'all') {
-      return matchesSearch
-    }
+    const matchesHour = selectedHour === 'all' || 
+                       new Date(booking.startTime).getHours().toString() === selectedHour
     
-    const bookingHour = new Date(booking.startTime).getHours().toString()
-    return matchesSearch && bookingHour === selectedHour
+    const matchesStatus = selectedStatus === 'all' || booking.status === selectedStatus
+    
+    return matchesSearch && matchesHour && matchesStatus
   })
 
   const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE)
@@ -124,13 +158,21 @@ export function TodayBookingsPage() {
   // Generate hour options for filter
   const hourOptions = [
     { value: 'all', label: 'All Hours' },
-    ...Array.from({ length: 14 }, (_, i) => {
-      const hour = i + 7 // 7 AM to 8 PM
+    ...Array.from({ length: 15 }, (_, i) => {
+      const hour = i + 7 // 7 AM to 9 PM (for weekdays)
       return {
         value: hour.toString(),
         label: `${hour.toString().padStart(2, '0')}:00`
       }
     })
+  ]
+
+  // Generate status options for filter
+  const statusOptions = [
+    { value: 'all', label: 'All Statuses' },
+    { value: 'CONFIRMED', label: 'Confirmed' },
+    { value: 'CANCELLED', label: 'Cancelled' },
+    { value: 'COMPLETED', label: 'Completed' }
   ]
 
   if (isLoading) {
@@ -158,6 +200,16 @@ export function TodayBookingsPage() {
               <span className="text-sm text-gray-600">
                 {filteredBookings.length} booking{filteredBookings.length !== 1 ? 's' : ''}
               </span>
+              {currentUser?.role === 'ADMIN' && (
+                <button
+                  onClick={handleMarkCompleted}
+                  disabled={isMarkingCompleted}
+                  className="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  {isMarkingCompleted ? 'Marking...' : 'Mark Completed'}
+                </button>
+              )}
             </div>
           </div>
 
@@ -207,6 +259,24 @@ export function TodayBookingsPage() {
                   </select>
                 </div>
               </div>
+
+              {/* Status Filter */}
+              <div className="sm:w-48">
+                <div className="relative">
+                  <Filter className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+                  <select
+                    value={selectedStatus}
+                    onChange={handleStatusFilterChange}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 appearance-none bg-white"
+                  >
+                    {statusOptions.map(option => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
             </div>
           </div>
 
@@ -237,7 +307,7 @@ export function TodayBookingsPage() {
                   {paginatedBookings.length === 0 ? (
                     <tr>
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
-                        {searchTerm || selectedHour !== 'all' 
+                        {searchTerm || selectedHour !== 'all' || selectedStatus !== 'all'
                           ? 'No bookings match your filters'
                           : 'No bookings for today'
                         }

@@ -8,6 +8,7 @@ import rateLimit from 'express-rate-limit'
 import { config, corsConfig, rateLimitConfig } from './config/index.js'
 import { testDatabaseConnection, disconnectDatabase } from './config/database.js'
 import { errorHandler, notFoundHandler } from './middleware/errorHandler.js'
+import { schedulerService } from './services/schedulerService.js'
 
 // Import versioned routes
 import apiRoutes from './routes/index.js'
@@ -150,6 +151,9 @@ const startServer = async (): Promise<void> => {
 
         console.log('✅ Database connected successfully')
 
+        // Start the booking status scheduler
+        schedulerService.start()
+
         // Start server
         const server = app.listen(config.PORT, () => {
             console.log(`🚀 Server running on port ${config.PORT}`)
@@ -165,6 +169,9 @@ const startServer = async (): Promise<void> => {
 
             server.close(async () => {
                 console.log('HTTP server closed')
+
+                // Stop the scheduler
+                schedulerService.stop()
 
                 try {
                     await disconnectDatabase()

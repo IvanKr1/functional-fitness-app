@@ -11,14 +11,20 @@ export const getBookings = async (req: AuthenticatedRequest, res: Response): Pro
         const { user } = req
         const { startDate, endDate, status, limit } = req.query
 
-        // Always only return bookings for the current user, regardless of role
         const options: any = {}
         if (startDate) options.startDate = new Date(startDate as string)
         if (endDate) options.endDate = new Date(endDate as string)
         if (status) options.status = status
         if (limit) options.limit = parseInt(limit as string)
 
-        const bookings = await bookingService.getUserBookings(user!.id, options)
+        let bookings
+        // If admin is requesting bookings for a specific date range (like today), return all bookings
+        // Otherwise, return only user's own bookings
+        if (user!.role === 'ADMIN' && startDate && endDate) {
+            bookings = await bookingService.getAllBookings(options)
+        } else {
+            bookings = await bookingService.getUserBookings(user!.id, options)
+        }
 
         res.status(200).json({
             success: true,
@@ -187,6 +193,37 @@ export const deleteAllUserBookings = async (req: AuthenticatedRequest, res: Resp
         res.status(400).json({
             success: false,
             error: error instanceof Error ? error.message : 'Failed to cancel bookings'
+        })
+    }
+}
+
+/**
+ * Mark past bookings as completed endpoint (admin only)
+ */
+export const markPastBookingsCompleted = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const { user } = req
+
+        // Only admins can trigger this
+        if (user!.role !== 'ADMIN') {
+            res.status(403).json({
+                success: false,
+                error: 'Only admins can perform this action'
+            })
+            return
+        }
+
+        const completedCount = await bookingService.markPastBookingsAsCompleted()
+
+        res.status(200).json({
+            success: true,
+            data: { completedCount },
+            message: `Successfully marked ${completedCount} booking${completedCount !== 1 ? 's' : ''} as completed`
+        })
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to mark bookings as completed'
         })
     }
 }
