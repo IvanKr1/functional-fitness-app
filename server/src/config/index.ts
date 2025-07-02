@@ -101,7 +101,7 @@ export const cookieConfig = {
     options: {
         httpOnly: true,
         secure: true,
-        sameSite: 'none',
+        sameSite: 'none' as 'none',
         maxAge: parseInt(config.JWT_LIFE_HOURS) * 3600000
     }
 }
