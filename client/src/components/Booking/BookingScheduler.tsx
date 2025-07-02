@@ -551,7 +551,8 @@ export const BookingScheduler = () => {
                         const startHour = start.getHours();
                         let isOutsideHours;
                         if (selectedDate.getDay() === 6) {
-                            isOutsideHours = startHour < 7 || startHour > 10;
+                            // Allow 11:00 slot on Saturday
+                            isOutsideHours = startHour < 7 || startHour > 11;
                         } else {
                             isOutsideHours = startHour < 7 || startHour > 20;
                         }
@@ -702,14 +703,14 @@ export const BookingScheduler = () => {
                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
                             Your Upcoming Bookings
                         </Typography>
-                        <Button
+                        {/* <Button
                             variant="outlined"
                             onClick={handleResetLimits}
                             sx={{ textTransform: 'none', fontWeight: 500 }}
                             className="hidden sm:inline-flex sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                         >
                             Reset All Bookings
-                        </Button>
+                        </Button> */}
                     </Box>
                     {/* Mobile: show Reset button below heading */}
                     <Button
@@ -929,7 +930,7 @@ export const BookingScheduler = () => {
             </Dialog>
 
             {/* Reset booking limits confirmation dialog */}
-            <Dialog
+            {/* <Dialog
                 open={isResetDialogOpen}
                 onClose={() => setIsResetDialogOpen(false)}
                 PaperProps={{
@@ -970,7 +971,7 @@ export const BookingScheduler = () => {
                         {isResetLoading ? <CircularProgress size={20} color="inherit" /> : 'Reset All'}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </Dialog> */}
         </Paper>
     );
 };
