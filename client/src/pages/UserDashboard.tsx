@@ -247,12 +247,16 @@ export const UserDashboard = () => {
     return (
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
             {/* Top bar with Reset Password and Booking History buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}
+              className="sm:flex-row flex-col sm:items-center items-stretch gap-2"
+            >
                 <Button
                     variant="outlined"
                     color="primary"
                     onClick={() => setShowBookingHistory(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
+                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg mb-2 sm:mb-0"
                 >
                     Show Booking History
                 </Button>
@@ -261,6 +265,7 @@ export const UserDashboard = () => {
                     color="warning"
                     onClick={() => setShowResetPasswordDialog(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
+                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                 >
                     Reset Password
                 </Button>
@@ -268,14 +273,18 @@ export const UserDashboard = () => {
 
             {/* Header */}
             <Box sx={{ mb: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+                  className="flex-col sm:flex-row sm:items-center items-start gap-2"
+                >
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
                         Welcome back, {userProfile.name}!
                     </Typography>
                     <Button
                         variant="outlined"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/')} 
                         sx={{ textTransform: 'none', fontWeight: 500 }}
+                        className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                     >
                         Book Training
                     </Button>
