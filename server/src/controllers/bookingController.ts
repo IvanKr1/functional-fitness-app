@@ -167,6 +167,26 @@ export const getUsersMissingThisWeek = async (req: AuthenticatedRequest, res: Re
 }
 
 /**
+ * Get users with incomplete weekly bookings endpoint (admin only)
+ */
+export const getUsersWithIncompleteWeeklyBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {
+    try {
+        const users = await bookingService.getUsersWithIncompleteWeeklyBookings()
+
+        res.status(200).json({
+            success: true,
+            data: users,
+            message: 'Users with incomplete weekly bookings retrieved successfully'
+        })
+    } catch (error) {
+        res.status(400).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Failed to retrieve users with incomplete weekly bookings'
+        })
+    }
+}
+
+/**
  * Delete all bookings for a user endpoint (marks as CANCELLED)
  */
 export const deleteAllUserBookings = async (req: AuthenticatedRequest, res: Response): Promise<void> => {

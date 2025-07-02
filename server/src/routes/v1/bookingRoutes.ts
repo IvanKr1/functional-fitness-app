@@ -60,6 +60,13 @@ router.get('/missing-this-week',
     asyncHandler(bookingController.getUsersMissingThisWeek)
 )
 
+// GET /bookings/incomplete-weekly - Get users with incomplete weekly bookings (admin only)
+router.get('/incomplete-weekly',
+    authenticateToken,
+    requireAdmin,
+    asyncHandler(bookingController.getUsersWithIncompleteWeeklyBookings)
+)
+
 // POST /bookings/mark-completed - Mark past bookings as completed (admin only)
 router.post('/mark-completed',
     authenticateToken,

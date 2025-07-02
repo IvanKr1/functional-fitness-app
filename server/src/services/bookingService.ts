@@ -523,6 +523,75 @@ export const getWeeklyBookingCount = async (
 }
 
 /**
+ * Get users with incomplete weekly bookings (admin only)
+ * Returns users who haven't reached their weekly booking limit
+ */
+export const getUsersWithIncompleteWeeklyBookings = async (): Promise<Array<{
+    id: string
+    name: string
+    email: string
+    mobilePhone: string | undefined
+    weeklyBookingLimit: number
+    currentWeekBookings: number
+    currentWeekBookingTimes: Array<{
+        id: string
+        startTime: Date
+        endTime: Date
+        status: BookingStatus
+    }>
+    missingBookings: number
+}>> => {
+    const { start, end } = getWeekBounds(new Date())
+
+    // Get all users with their current week bookings
+    const users = await prisma.user.findMany({
+        where: {
+            role: Role.USER // Only include regular users, not admins
+        },
+        select: {
+            id: true,
+            name: true,
+            email: true,
+            mobilePhone: true,
+            weeklyBookingLimit: true,
+            bookings: {
+                where: {
+                    startTime: {
+                        gte: start,
+                        lte: end
+                    },
+                    status: { not: BookingStatus.CANCELLED }
+                },
+                select: {
+                    id: true,
+                    startTime: true,
+                    endTime: true,
+                    status: true
+                },
+                orderBy: { startTime: 'asc' }
+            }
+        }
+    })
+
+    // Filter users who haven't reached their weekly limit
+    const usersWithIncompleteBookings = users
+        .map(user => ({
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            mobilePhone: user.mobilePhone || undefined,
+            weeklyBookingLimit: user.weeklyBookingLimit,
+            currentWeekBookings: user.bookings.length,
+            currentWeekBookingTimes: user.bookings,
+            missingBookings: user.weeklyBookingLimit - user.bookings.length
+        }))
+        .filter(user => user.missingBookings > 0) // Only users who haven't reached their limit
+        .sort((a, b) => b.missingBookings - a.missingBookings) // Sort by most missing bookings first
+
+    return usersWithIncompleteBookings
+}
+
+/**
  * Get users with no bookings this week (admin only)
  */
 export const getUsersWithoutBookingsThisWeek = async (): Promise<Array<{
