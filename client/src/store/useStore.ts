@@ -24,7 +24,7 @@ export const useStore = create<AppState>()(
             user: null,
             currentUser: null,
             isAuthenticated: false,
-            isLoading: false,
+            isLoading: true,
             error: null,
 
             // Auth actions
