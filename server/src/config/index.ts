@@ -98,12 +98,11 @@ export const jwtConfig = {
  */
 export const cookieConfig = {
     secret: config.COOKIE_SECRET,
-    domain: config.COOKIE_DOMAIN,
     options: {
         httpOnly: true,
-        secure: isProduction(),
-        sameSite: 'strict' as const,
-        maxAge: parseInt(config.JWT_LIFE_HOURS) * 3600000 // Convert hours to milliseconds
+        secure: true,
+        sameSite: 'none',
+        maxAge: parseInt(config.JWT_LIFE_HOURS) * 3600000
     }
 }
 
@@ -160,5 +159,3 @@ export const corsConfig = {
     optionsSuccessStatus: 200
 }
 
-console.log('FRONTEND_URL:', process.env.FRONTEND_URL)
-console.log('NODE_ENV:', process.env.NODE_ENV) 
