@@ -15,7 +15,7 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    window.location.href = '/login'
   }
 
   const handleToggleSidebar = () => {
