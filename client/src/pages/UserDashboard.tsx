@@ -249,7 +249,7 @@ export const UserDashboard = () => {
             {/* Top bar with Reset Password and Booking History buttons */}
             <Box
               sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}
-              className="sm:flex-row flex-col sm:items-center items-stretch gap-2"
+              className="sm:flex-row flex-col sm:items-center items-stretch gap-2 hidden sm:flex"
             >
                 <Button
                     variant="outlined"
@@ -271,6 +271,31 @@ export const UserDashboard = () => {
                 </Button>
             </Box>
 
+            {/* Mobile fixed bottom bar for Booking History and Reset Password */}
+            <Box
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex sm:hidden justify-center gap-2 p-3"
+              style={{ boxShadow: '0 -2px 8px rgba(0,0,0,0.04)' }}
+            >
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setShowBookingHistory(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
+                    className="px-3 py-2 text-sm rounded-md w-full"
+                >
+                    Show Booking History
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => setShowResetPasswordDialog(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
+                    className="px-3 py-2 text-sm rounded-md w-full"
+                >
+                    Reset Password
+                </Button>
+            </Box>
+
             {/* Header */}
             <Box sx={{ mb: 4 }}>
                 <Box
@@ -284,7 +309,7 @@ export const UserDashboard = () => {
                         variant="outlined"
                         onClick={() => navigate('/')} 
                         sx={{ textTransform: 'none', fontWeight: 500 }}
-                        className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
+                        className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg hidden sm:inline-flex"
                     >
                         Book Training
                     </Button>
