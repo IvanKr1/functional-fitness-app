@@ -158,4 +158,7 @@ export const corsConfig = {
     },
     credentials: true,
     optionsSuccessStatus: 200
-} 
+}
+
+console.log('FRONTEND_URL:', process.env.FRONTEND_URL)
+console.log('NODE_ENV:', process.env.NODE_ENV) 
