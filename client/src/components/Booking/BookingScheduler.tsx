@@ -665,7 +665,7 @@ export const BookingScheduler = () => {
             {/* Header section */}
             <Box sx={{ mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                    <Typography variant="h4" sx={{ fontWeight: 600 }}>
+                    <Typography variant="h4" sx={{ fontWeight: 600 }} className="text-2xl sm:text-4xl leading-tight">
                         Book Your Gym Session
                     </Typography>
                     {currentUser && currentUser.role === 'USER' && (
@@ -673,13 +673,18 @@ export const BookingScheduler = () => {
                             variant="outlined"
                             onClick={() => navigate('/dashboard')}
                             sx={{ textTransform: 'none', fontWeight: 500 }}
+                            className="hidden sm:inline-flex sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                         >
                             View Dashboard
                         </Button>
                     )}
                 </Box>
-                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week, up to 2 weeks in advance. You can only cancel a booking up to 2 hours before the session starts.
+                <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }} className="text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
+                    <ul className="list-none p-0 m-0 text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
+                      <li>Select a date and time slot to book your fitness session.</li>
+                      <li>You can book up to 3 sessions per week, up to 2 weeks in advance.</li>
+                      <li>You can only cancel a booking up to 2 hours before the session starts.</li>
+                    </ul>
                 </Typography>
             </Box>
 
@@ -697,19 +702,19 @@ export const BookingScheduler = () => {
                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
                             Your Upcoming Bookings
                         </Typography>
+                    </Box>
+                    <Box className="mt-3 mb-6">
                         <Button
                             variant="outlined"
                             color="primary"
                             onClick={handleResetLimits}
-                            sx={{
-                                textTransform: 'none',
-                                fontWeight: 500,
-                            }}
+                            sx={{ textTransform: 'none', fontWeight: 500, backgroundColor: 'white', borderColor: '#2563eb', color: '#2563eb', boxShadow: 'none', transition: 'all 0.2s', '&:hover': { backgroundColor: '#f0f7ff', borderColor: '#2563eb', boxShadow: 'none' }, '&:focus': { outline: '2px solid #2563eb' } }}
+                            className="block w-full sm:inline-block sm:w-auto border border-blue-600 text-blue-600 bg-white font-medium rounded-lg px-6 py-2 text-base sm:text-base text-sm min-w-0 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
                         >
                             Reset All Bookings
                         </Button>
                     </Box>
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="flex-col gap-3 sm:flex-row sm:gap-2">
                         {userBookings.map((booking) => (
                             <Card
                                 key={booking.id}
@@ -722,14 +727,16 @@ export const BookingScheduler = () => {
                                         boxShadow: theme.shadows[4],
                                     },
                                 }}
+                                className="sm:p-4 p-2 rounded-lg sm:rounded-xl"
                             >
-                                <CardContent>
-                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }}>
+                                <CardContent className="p-0">
+                                    <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }} className="text-lg sm:text-xl mb-1">
                                         {format(new Date(booking.date), 'EEEE, MMMM d')}
                                     </Typography>
                                     <Typography
                                         variant="body1"
                                         sx={{ color: 'text.secondary', mb: 2 }}
+                                        className="text-sm sm:text-base mb-2"
                                     >
                                         {booking.startTime} - {booking.endTime}
                                     </Typography>
@@ -742,6 +749,7 @@ export const BookingScheduler = () => {
                                             textTransform: 'none',
                                             fontWeight: 500,
                                         }}
+                                        className="sm:px-4 sm:py-2 px-3 py-2 text-sm sm:text-base rounded-md sm:rounded-lg"
                                         disabled={(new Date(`${booking.date}T${booking.startTime}`).getTime() - Date.now()) < 2 * 60 * 60 * 1000}
                                     >
                                         Cancel Booking
