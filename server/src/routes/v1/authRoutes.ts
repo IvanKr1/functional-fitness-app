@@ -48,4 +48,10 @@ router.patch('/change-password/:id',
     asyncHandler(authController.changePassword)
 )
 
+// POST /auth/reset-password/:id - Reset user password (user can reset their own password)
+router.post('/reset-password/:id',
+    authenticateToken,
+    asyncHandler(authController.resetPassword)
+)
+
 export default router 

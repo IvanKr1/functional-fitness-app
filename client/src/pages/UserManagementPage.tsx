@@ -31,6 +31,8 @@ interface DeleteUserResponse {
   error?: string
 }
 
+
+
 const ITEMS_PER_PAGE = 10
 
 export function UserManagementPage() {
@@ -169,6 +171,8 @@ export function UserManagementPage() {
     }
   }
 
+
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -249,6 +253,8 @@ export function UserManagementPage() {
               </div>
             </div>
           )}
+
+          
 
           {/* Users List */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200">
