@@ -32,10 +32,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
             <span className="text-sm">{currentUser?.name}</span>
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-blue-700 rounded-md transition-colors"
+              className="p-2 bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
               aria-label="Logout"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-5 w-5 text-white" />
             </button>
           </div>
         </div>

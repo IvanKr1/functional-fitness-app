@@ -12,11 +12,6 @@ interface AdminSidebarProps {
 
 const navItems = [
   {
-    label: 'Dashboard',
-    icon: LayoutDashboard,
-    to: '/',
-  },
-  {
     label: 'User Management',
     icon: Users,
     to: '/admin/users',
@@ -35,12 +30,7 @@ const navItems = [
     label: 'Incomplete Weekly Bookings',
     icon: AlertTriangle,
     to: '/admin/incomplete-weekly-bookings',
-  },
-  {
-    label: 'Settings',
-    icon: Settings,
-    to: '/admin/settings',
-  },
+  }
 ]
 
 const AVATAR_PLACEHOLDER = 'https://ui-avatars.com/api/?name=User&background=E0E7FF&color=3730A3&size=64'
