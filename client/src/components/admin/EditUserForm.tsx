@@ -65,6 +65,8 @@ interface RecordPaymentResponse {
   error?: string
 }
 
+
+
 export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps) {
   const [formData, setFormData] = useState<UpdateUserRequest>({
     name: '',
@@ -169,6 +171,8 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
       setIsLoading(false)
     }
   }
+
+
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -402,6 +406,8 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                 <span className="font-medium text-gray-700">Created:</span>
                 <span className="ml-2 text-gray-600">{formatDate(fullUser.createdAt)}</span>
               </div>
+
+
               {fullUser.notes && (
                 <div className="md:col-span-2">
                   <span className="font-medium text-gray-700">Notes:</span>

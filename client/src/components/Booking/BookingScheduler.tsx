@@ -89,10 +89,13 @@ export const BookingScheduler = () => {
         fetchUserBookings();
     }, [currentUser, setBookings]);
 
-    // Get user's upcoming bookings
+    // Get user's upcoming bookings (only future bookings)
     const userBookings = currentUser
         ? bookings
-              .filter((booking) => booking.userId === currentUser.id)
+              .filter((booking) => {
+                const bookingDateTime = new Date(`${booking.date}T${booking.startTime}`)
+                return booking.userId === currentUser.id && bookingDateTime > new Date()
+              })
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : [];
 
@@ -373,8 +376,8 @@ export const BookingScheduler = () => {
         
         // Set end time based on day of week
         if (selectedDate.getDay() === 6) {
-            // Saturday: last slot ends at 11:00 (so last booking starts at 10:00)
-            slotEndLimit.setHours(11, 0, 0, 0);
+            // Saturday: last slot ends at 12:00 (so last booking starts at 11:00)
+            slotEndLimit.setHours(12, 0, 0, 0);
         } else {
             // Other days: last slot ends at 21:00
             slotEndLimit.setHours(21, 0, 0, 0);
@@ -542,23 +545,17 @@ export const BookingScheduler = () => {
                         const slotLabel = `${format(start, 'HH:mm')}`;
                         const slotKey = format(start, 'HH:mm') + ' - ' + format(end, 'HH:mm');
                         const isSelected = uiSelectedSlot === slotKey;
-                        
-                        // Check if slot is disabled (past time, outside hours, or beyond 2-week limit)
                         const now = new Date();
                         const isPastTime = start <= now;
+                        const isLessThan2Hours = (start.getTime() - now.getTime()) < 2 * 60 * 60 * 1000;
                         const startHour = start.getHours();
-                        
-                        // Allow slots starting at 7:00 up to and including 20:00 (except Saturday)
                         let isOutsideHours;
                         if (selectedDate.getDay() === 6) {
-                            // Saturday: allow slots starting at 7:00 up to and including 10:00
                             isOutsideHours = startHour < 7 || startHour > 10;
                         } else {
-                            // Other days: allow slots starting at 7:00 up to and including 20:00
                             isOutsideHours = startHour < 7 || startHour > 20;
                         }
-                        
-                        const isDisabled = isPastTime || isOutsideHours;
+                        const isDisabled = isPastTime || isOutsideHours || isLessThan2Hours;
                         
                         const baseStyles = {
                             width: '100%',
@@ -682,7 +679,7 @@ export const BookingScheduler = () => {
                     )}
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
-                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week, up to 2 weeks in advance. Saturday sessions end at 11 AM.
+                    Select a date and time slot to book your fitness session. You can book up to 3 sessions per week, up to 2 weeks in advance. You can only cancel a booking up to 2 hours before the session starts.
                 </Typography>
             </Box>
 
@@ -745,6 +742,7 @@ export const BookingScheduler = () => {
                                             textTransform: 'none',
                                             fontWeight: 500,
                                         }}
+                                        disabled={(new Date(`${booking.date}T${booking.startTime}`).getTime() - Date.now()) < 2 * 60 * 60 * 1000}
                                     >
                                         Cancel Booking
                                     </Button>

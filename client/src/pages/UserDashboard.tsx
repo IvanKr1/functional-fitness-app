@@ -14,11 +14,17 @@ import {
     CircularProgress,
     Paper,
     useTheme,
+    Dialog,
+    DialogTitle,
+    DialogContent,
+    DialogActions,
 } from '@mui/material';
-import { Event, AccessTime, CreditCard, Warning, Save, Edit } from '@mui/icons-material';
-import { format, addDays, isAfter, isBefore } from 'date-fns';
+import { Event, AccessTime, CreditCard, Warning, Save, Edit, Key } from '@mui/icons-material';
+import { format, addDays, isAfter, isBefore, subDays } from 'date-fns';
 import { useStore } from '../store/useStore';
 import { apiService } from '../services/api.js';
+import { ResetPasswordForm } from '../components/ResetPasswordForm.js'
+import { BookingHistoryModal } from '../components/BookingHistoryModal.js'
 
 interface UserProfile {
     id: string;
@@ -42,6 +48,16 @@ interface Booking {
     date: string;
 }
 
+interface ResetPasswordResponse {
+    success: boolean;
+    data?: {
+        user: UserProfile;
+        newPassword: string;
+    };
+    message?: string;
+    error?: string;
+}
+
 export const UserDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
@@ -54,6 +70,10 @@ export const UserDashboard = () => {
     const [injuryNotes, setInjuryNotes] = useState('');
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
+    const [showBookingHistory, setShowBookingHistory] = useState(false);
+    const [isResettingPassword, setIsResettingPassword] = useState(false);
+    const [resetPasswordResult, setResetPasswordResult] = useState<{ show: boolean; password: string }>({ show: false, password: '' });
 
     // Fetch user profile and bookings
     useEffect(() => {
@@ -169,6 +189,42 @@ export const UserDashboard = () => {
             .slice(0, 3); // Show next 3 bookings
     };
 
+    // Reset password
+    const handleResetPassword = async () => {
+        if (!currentUser) return;
+
+        setIsResettingPassword(true);
+        setError(null);
+        setSuccess(null);
+
+        try {
+            const response = await apiService.post<ResetPasswordResponse>(`/auth/reset-password/${currentUser.id}`);
+            
+            if (response.success && response.data) {
+                setResetPasswordResult({ show: true, password: response.data.newPassword });
+                setShowResetPasswordDialog(false);
+                setSuccess('Password reset successfully. Please check the dialog for your new password.');
+            } else {
+                setError(response.error || 'Failed to reset password');
+            }
+        } catch (error) {
+            console.error('Error resetting password:', error);
+            setError('Failed to reset password');
+        } finally {
+            setIsResettingPassword(false);
+        }
+    };
+
+    const closeResetPasswordResult = () => {
+        setResetPasswordResult({ show: false, password: '' });
+    };
+
+    // Filter bookings from the last 30 days
+    const last30DaysBookings = bookings.filter(b => {
+        const date = new Date(b.startTime)
+        return date >= subDays(new Date(), 30)
+    })
+
     if (isLoading) {
         return (
             <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '60vh' }}>
@@ -190,6 +246,26 @@ export const UserDashboard = () => {
 
     return (
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
+            {/* Top bar with Reset Password and Booking History buttons */}
+            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}>
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setShowBookingHistory(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500 }}
+                >
+                    Show Booking History
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => setShowResetPasswordDialog(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500 }}
+                >
+                    Reset Password
+                </Button>
+            </Box>
+
             {/* Header */}
             <Box sx={{ mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -401,6 +477,82 @@ export const UserDashboard = () => {
                     </Card>
                 </Grid>
             </Grid>
+
+            {/* Reset Password Dialog */}
+            <Dialog
+                open={showResetPasswordDialog}
+                onClose={() => setShowResetPasswordDialog(false)}
+                maxWidth="xs"
+                fullWidth
+            >
+                <DialogTitle>Reset Password</DialogTitle>
+                <DialogContent>
+                    <ResetPasswordForm onSuccess={() => setShowResetPasswordDialog(false)} onCancel={() => setShowResetPasswordDialog(false)} />
+                </DialogContent>
+            </Dialog>
+
+            {/* Reset Password Result Dialog */}
+            <Dialog
+                open={resetPasswordResult.show}
+                onClose={closeResetPasswordResult}
+                maxWidth="sm"
+                fullWidth
+            >
+                <DialogTitle>
+                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                        <Key sx={{ mr: 1, color: theme.palette.success.main }} />
+                        Password Reset Successful
+                    </Box>
+                </DialogTitle>
+                <DialogContent>
+                    <Typography variant="body1" sx={{ mb: 2 }}>
+                        Your password has been reset successfully. Here's your new password:
+                    </Typography>
+                    <Paper
+                        variant="outlined"
+                        sx={{
+                            p: 2,
+                            backgroundColor: theme.palette.success.light,
+                            borderColor: theme.palette.success.main,
+                        }}
+                    >
+                        <Typography
+                            variant="h6"
+                            sx={{
+                                fontFamily: 'monospace',
+                                fontWeight: 'bold',
+                                textAlign: 'center',
+                                color: theme.palette.success.dark,
+                            }}
+                        >
+                            {resetPasswordResult.password}
+                        </Typography>
+                    </Paper>
+                    <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                        <strong>Important:</strong> Please copy this password and save it securely. You'll need it to log in next time.
+                    </Typography>
+                </DialogContent>
+                <DialogActions>
+                    <Button
+                        onClick={() => {
+                            navigator.clipboard.writeText(resetPasswordResult.password);
+                        }}
+                        variant="outlined"
+                    >
+                        Copy Password
+                    </Button>
+                    <Button
+                        onClick={closeResetPasswordResult}
+                        variant="contained"
+                        color="primary"
+                    >
+                        Close
+                    </Button>
+                </DialogActions>
+            </Dialog>
+
+            {/* Booking History Modal */}
+            <BookingHistoryModal open={showBookingHistory} onClose={() => setShowBookingHistory(false)} bookings={last30DaysBookings} />
         </Box>
     );
 }; 

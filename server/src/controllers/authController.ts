@@ -221,4 +221,56 @@ export const getDevToken = async (
         const statusCode = error instanceof AuthenticationError ? 401 : 403
         res.status(statusCode).json(response)
     }
+}
+
+/**
+ * Reset user password endpoint (user can reset their own password)
+ */
+export const resetPassword = async (
+    req: AuthenticatedRequest,
+    res: Response
+): Promise<void> => {
+    try {
+        const userId = req.params.id as string
+        const requestingUserId = req.user?.id as string
+        const { currentPassword, newPassword } = req.body
+
+        if (!requestingUserId) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'Authentication required'
+            }
+            res.status(401).json(response)
+            return
+        }
+
+        // Users can only reset their own password
+        if (userId !== requestingUserId) {
+            const response: ApiResponse = {
+                success: false,
+                error: 'You can only reset your own password'
+            }
+            res.status(403).json(response)
+            return
+        }
+
+        const result = await authService.resetPassword(userId, requestingUserId, currentPassword, newPassword)
+
+        const response: ApiResponse = {
+            success: true,
+            data: {
+                user: result.user
+            },
+            message: 'Password reset successfully'
+        }
+
+        res.status(200).json(response)
+    } catch (error) {
+        const response: ApiResponse = {
+            success: false,
+            error: error instanceof Error ? error.message : 'Password reset failed'
+        }
+
+        res.status(400).json(response)
+    }
 } 

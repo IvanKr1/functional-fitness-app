@@ -207,4 +207,65 @@ export const generateDevToken = async (credentials: LoginRequest): Promise<{
         },
         token
     }
+}
+
+/**
+ * Reset user password (user can reset their own password)
+ * User must provide currentPassword and newPassword
+ */
+export const resetPassword = async (
+    userId: string,
+    requestingUserId: string,
+    currentPassword: string,
+    newPassword: string
+): Promise<{
+    user: {
+        id: string
+        name: string
+        email: string
+        role: Role
+    }
+}> => {
+    // Users can only reset their own password
+    if (userId !== requestingUserId) {
+        throw new AuthenticationError('You can only reset your own password')
+    }
+
+    // Get user
+    const user = await prisma.user.findUnique({
+        where: { id: userId }
+    })
+
+    if (!user) {
+        throw new AuthenticationError('User not found')
+    }
+
+    // Verify current password
+    const isValidPassword = await comparePassword(currentPassword, user.passwordHash)
+    if (!isValidPassword) {
+        throw new AuthenticationError('Current password is incorrect')
+    }
+
+    // Validate new password length
+    if (!newPassword || newPassword.length < 6) {
+        throw new ValidationError('New password must be at least 6 characters', 'newPassword')
+    }
+
+    // Hash the new password
+    const newPasswordHash = await hashPassword(newPassword)
+
+    // Update password
+    await prisma.user.update({
+        where: { id: userId },
+        data: { passwordHash: newPasswordHash }
+    })
+
+    return {
+        user: {
+            id: user.id,
+            name: user.name,
+            email: user.email,
+            role: user.role
+        }
+    }
 } 
