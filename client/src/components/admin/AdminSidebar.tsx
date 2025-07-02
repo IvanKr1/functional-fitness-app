@@ -32,6 +32,11 @@ const navItems = [
     to: '/admin/today-bookings',
   },
   {
+    label: 'Incomplete Weekly Bookings',
+    icon: AlertTriangle,
+    to: '/admin/incomplete-weekly-bookings',
+  },
+  {
     label: 'Settings',
     icon: Settings,
     to: '/admin/settings',
