@@ -332,50 +332,6 @@ export const UserDashboard = () => {
             )}
 
             <Grid container spacing={3}>
-                {/* Payment Information */}
-                <Grid item xs={12} md={6}>
-                    <Card sx={{ height: '100%' }}>
-                        <CardContent>
-                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                                <CreditCard sx={{ mr: 1, color: theme.palette.primary.main }} />
-                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                    Payment Information
-                                </Typography>
-                            </Box>
-                            
-                            <Box sx={{ mb: 2 }}>
-                                <Chip
-                                    label={paymentStatus.status}
-                                    color={paymentStatus.color}
-                                    sx={{ mb: 2 }}
-                                />
-                            </Box>
-
-                            {userProfile.lastPaymentDate && (
-                                <Box sx={{ mb: 2 }}>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Last Payment
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {format(new Date(userProfile.lastPaymentDate), 'MMMM d, yyyy')}
-                                    </Typography>
-                                </Box>
-                            )}
-
-                            {userProfile.nextPaymentDueDate && (
-                                <Box>
-                                    <Typography variant="body2" color="text.secondary">
-                                        Next Payment Due
-                                    </Typography>
-                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                        {format(new Date(userProfile.nextPaymentDueDate), 'MMMM d, yyyy')}
-                                    </Typography>
-                                </Box>
-                            )}
-                        </CardContent>
-                    </Card>
-                </Grid>
-
                 {/* Training Information */}
                 <Grid item xs={12} md={6}>
                     <Card sx={{ height: '100%' }}>
@@ -420,6 +376,50 @@ export const UserDashboard = () => {
                                             </Typography>
                                         </Box>
                                     ))}
+                                </Box>
+                            )}
+                        </CardContent>
+                    </Card>
+                </Grid>
+
+                         {/* Payment Information */}
+                         <Grid item xs={12} md={6}>
+                    <Card sx={{ height: '100%' }}>
+                        <CardContent>
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                                <CreditCard sx={{ mr: 1, color: theme.palette.primary.main }} />
+                                <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                                    Payment Information
+                                </Typography>
+                            </Box>
+                            
+                            <Box sx={{ mb: 2 }}>
+                                <Chip
+                                    label={paymentStatus.status}
+                                    color={paymentStatus.color}
+                                    sx={{ mb: 2 }}
+                                />
+                            </Box>
+
+                            {userProfile.lastPaymentDate && (
+                                <Box sx={{ mb: 2 }}>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Last Payment
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {format(new Date(userProfile.lastPaymentDate), 'MMMM d, yyyy')}
+                                    </Typography>
+                                </Box>
+                            )}
+
+                            {userProfile.nextPaymentDueDate && (
+                                <Box>
+                                    <Typography variant="body2" color="text.secondary">
+                                        Next Payment Due
+                                    </Typography>
+                                    <Typography variant="body1" sx={{ fontWeight: 500 }}>
+                                        {format(new Date(userProfile.nextPaymentDueDate), 'MMMM d, yyyy')}
+                                    </Typography>
                                 </Box>
                             )}
                         </CardContent>
