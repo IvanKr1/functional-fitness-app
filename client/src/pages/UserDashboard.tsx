@@ -247,12 +247,16 @@ export const UserDashboard = () => {
     return (
         <Box sx={{ maxWidth: 1200, mx: 'auto' }}>
             {/* Top bar with Reset Password and Booking History buttons */}
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}>
+            <Box
+              sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2, gap: 2 }}
+              className="sm:flex-row flex-col sm:items-center items-stretch gap-2 hidden sm:flex"
+            >
                 <Button
                     variant="outlined"
                     color="primary"
                     onClick={() => setShowBookingHistory(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
+                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg mb-2 sm:mb-0"
                 >
                     Show Booking History
                 </Button>
@@ -261,6 +265,32 @@ export const UserDashboard = () => {
                     color="warning"
                     onClick={() => setShowResetPasswordDialog(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
+                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
+                >
+                    Reset Password
+                </Button>
+            </Box>
+
+            {/* Mobile fixed bottom bar for Booking History and Reset Password */}
+            <Box
+              className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex sm:hidden justify-center gap-2 p-3"
+              style={{ boxShadow: '0 -2px 8px rgba(0,0,0,0.04)' }}
+            >
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setShowBookingHistory(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
+                    className="px-3 py-2 text-sm rounded-md w-full"
+                >
+                    Show Booking History
+                </Button>
+                <Button
+                    variant="outlined"
+                    color="warning"
+                    onClick={() => setShowResetPasswordDialog(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
+                    className="px-3 py-2 text-sm rounded-md w-full"
                 >
                     Reset Password
                 </Button>
@@ -268,14 +298,18 @@ export const UserDashboard = () => {
 
             {/* Header */}
             <Box sx={{ mb: 4 }}>
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Box
+                  sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}
+                  className="flex-col sm:flex-row sm:items-center items-start gap-2"
+                >
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
                         Welcome back, {userProfile.name}!
                     </Typography>
                     <Button
                         variant="outlined"
-                        onClick={() => navigate('/')}
+                        onClick={() => navigate('/')} 
                         sx={{ textTransform: 'none', fontWeight: 500 }}
+                        className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg hidden sm:inline-flex"
                     >
                         Book Training
                     </Button>
@@ -393,7 +427,7 @@ export const UserDashboard = () => {
                 </Grid>
 
                 {/* Injury & Health Notes */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sx={{pb: 4}}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
