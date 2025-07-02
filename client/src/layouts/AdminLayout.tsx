@@ -22,6 +22,10 @@ export function AdminLayout({ children }: AdminLayoutProps) {
     setSidebarOpen(!sidebarOpen)
   }
 
+  if (!currentUser || currentUser.role !== 'ADMIN') {
+    return <div>Access denied</div>;
+  }
+
   return (
     <div className="relative min-h-screen bg-gray-50">
       {/* Header */}
