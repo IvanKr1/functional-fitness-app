@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs'
-import jwt, { SignOptions } from 'jsonwebtoken'
+import jwt from 'jsonwebtoken'
 import { Role } from '@prisma/client'
 import { prisma } from '../config/database.js'
 import { jwtConfig } from '../config/index.js'
@@ -36,7 +36,7 @@ const generateToken = (userId: string, email: string, role: Role): string => {
         role
     }
 
-    return jwt.sign(payload, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
+    return (jwt as any).sign(payload, jwtConfig.secret, { expiresIn: jwtConfig.expiresIn });
 }
 
 /**

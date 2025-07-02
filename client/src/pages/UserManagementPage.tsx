@@ -38,6 +38,7 @@ const ITEMS_PER_PAGE = 10
 export function UserManagementPage() {
   const [users, setUsers] = useState<User[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showCreateForm, setShowCreateForm] = useState(false)
   const [searchTerm, setSearchTerm] = useState('')
@@ -98,6 +99,7 @@ export function UserManagementPage() {
     if (!deleteConfirm.userId) return
 
     try {
+      setIsDeleting(true)
       const response = await apiService.delete<DeleteUserResponse>(`/users/${deleteConfirm.userId}`)
       
       if (response.success) {
@@ -116,6 +118,8 @@ export function UserManagementPage() {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to delete user')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -238,15 +242,20 @@ export function UserManagementPage() {
                   <div className="flex justify-center space-x-3 mt-4">
                     <button
                       onClick={handleDeleteCancel}
-                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                      disabled={isDeleting}
+                      className="px-4 py-2 bg-gray-300 text-gray-700 rounded-md hover:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       Cancel
                     </button>
                     <button
                       onClick={handleDeleteConfirm}
-                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      disabled={isDeleting}
+                      className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
                     >
-                      Delete
+                      {isDeleting && (
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      )}
+                      {isDeleting ? 'Deleting...' : 'Delete'}
                     </button>
                   </div>
                 </div>
