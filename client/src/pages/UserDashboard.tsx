@@ -427,7 +427,7 @@ export const UserDashboard = () => {
                 </Grid>
 
                 {/* Injury & Health Notes */}
-                <Grid item xs={12}>
+                <Grid item xs={12} sx={{pb: 4}}>
                     <Card>
                         <CardContent>
                             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
