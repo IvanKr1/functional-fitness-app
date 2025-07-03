@@ -78,6 +78,7 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
   const [error, setError] = useState<string | null>(null)
   const [isPaymentPaid, setIsPaymentPaid] = useState(false)
   const [fullUser, setFullUser] = useState<User | null>(user)
+  const [manualNextPaymentDueDate, setManualNextPaymentDueDate] = useState<string>('')
 
   useEffect(() => {
     if (user) {
@@ -93,6 +94,10 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
               lastPaymentDate: res.data.user.lastPaymentDate ? new Date(res.data.user.lastPaymentDate).toISOString() : '',
               nextPaymentDueDate: res.data.user.nextPaymentDueDate ? new Date(res.data.user.nextPaymentDueDate).toISOString() : ''
             })
+            // Set manual next payment due date if it exists
+            if (res.data.user.nextPaymentDueDate) {
+              setManualNextPaymentDueDate(new Date(res.data.user.nextPaymentDueDate).toISOString().split('T')[0])
+            }
           }
         })
     }
@@ -110,28 +115,90 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
 
   const handleLastPaymentDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const lastPaymentDate = e.target.value
-    setFormData(prev => ({
-      ...prev,
-      lastPaymentDate
-    }))
-
-    // Automatically calculate next payment due date (30 days later)
+    
     if (lastPaymentDate) {
-      const nextDueDate = new Date(lastPaymentDate)
-      nextDueDate.setDate(nextDueDate.getDate() + 30)
-      const nextDueDateString = nextDueDate.toISOString()
-      
+      // Store as ISO string for consistency
+      const dateISO = new Date(lastPaymentDate).toISOString()
       setFormData(prev => ({
         ...prev,
-        lastPaymentDate: new Date(lastPaymentDate).toISOString(),
-        nextPaymentDueDate: nextDueDateString
+        lastPaymentDate: dateISO
       }))
+
+      // Automatically calculate next payment due date (30 days later) only if manual date is not set
+      if (!manualNextPaymentDueDate) {
+        const nextDueDate = new Date(lastPaymentDate)
+        nextDueDate.setDate(nextDueDate.getDate() + 30)
+        const nextDueDateString = nextDueDate.toISOString()
+        
+        setFormData(prev => ({
+          ...prev,
+          nextPaymentDueDate: nextDueDateString
+        }))
+      }
     } else {
       setFormData(prev => ({
         ...prev,
         lastPaymentDate: '',
         nextPaymentDueDate: ''
       }))
+      setManualNextPaymentDueDate('')
+    }
+  }
+
+  const handleManualNextPaymentDueDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const manualDate = e.target.value
+    setManualNextPaymentDueDate(manualDate)
+    
+    if (manualDate) {
+      const dateISO = new Date(manualDate).toISOString()
+      setFormData(prev => ({
+        ...prev,
+        nextPaymentDueDate: dateISO
+      }))
+    } else {
+      // If manual date is cleared, recalculate based on last payment date
+      if (formData.lastPaymentDate) {
+        const nextDueDate = new Date(formData.lastPaymentDate)
+        nextDueDate.setDate(nextDueDate.getDate() + 30)
+        setFormData(prev => ({
+          ...prev,
+          nextPaymentDueDate: nextDueDate.toISOString()
+        }))
+      } else {
+        setFormData(prev => ({
+          ...prev,
+          nextPaymentDueDate: ''
+        }))
+      }
+    }
+  }
+
+  const handlePaymentPaidChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const isChecked = e.target.checked
+    setIsPaymentPaid(isChecked)
+    
+    // If checkbox is checked and no last payment date exists, set current date
+    if (isChecked && !formData.lastPaymentDate) {
+      const currentDate = new Date()
+      const currentDateISO = currentDate.toISOString()
+      
+      setFormData(prev => ({
+        ...prev,
+        lastPaymentDate: currentDateISO
+      }))
+      
+      // Calculate next payment due date (30 days later)
+      const nextDueDate = new Date()
+      nextDueDate.setDate(nextDueDate.getDate() + 30)
+      const nextDueDateString = nextDueDate.toISOString()
+      
+      setFormData(prev => ({
+        ...prev,
+        nextPaymentDueDate: nextDueDateString
+      }))
+      
+      // Set manual next payment due date
+      setManualNextPaymentDueDate(nextDueDate.toISOString().split('T')[0])
     }
   }
 
@@ -143,8 +210,28 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
     setError(null)
 
     try {
+      // Prepare the data to send
+      const dataToSend = { ...formData }
+      
+      // Convert dates to proper format for server validation
+      if (dataToSend.lastPaymentDate) {
+        // Convert ISO string to proper datetime format
+        const date = new Date(dataToSend.lastPaymentDate)
+        dataToSend.lastPaymentDate = date.toISOString()
+      }
+      
+      // If manual next payment due date is set, use that
+      if (manualNextPaymentDueDate) {
+        const date = new Date(manualNextPaymentDueDate)
+        dataToSend.nextPaymentDueDate = date.toISOString()
+      } else if (dataToSend.nextPaymentDueDate) {
+        // Convert existing next payment due date
+        const date = new Date(dataToSend.nextPaymentDueDate)
+        dataToSend.nextPaymentDueDate = date.toISOString()
+      }
+
       // First update user information
-      const updateResponse = await apiService.patch<UpdateUserResponse>(`/users/${fullUser.id}`, formData)
+      const updateResponse = await apiService.patch<UpdateUserResponse>(`/users/${fullUser.id}`, dataToSend)
       
       if (!updateResponse.success) {
         throw new Error(updateResponse.error || 'Failed to update user')
@@ -185,6 +272,12 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
   const getCalculatedNextDueDate = () => {
     if (!formData.lastPaymentDate) return 'Not set'
     
+    // If manual date is set, use that
+    if (manualNextPaymentDueDate) {
+      return formatDate(new Date(manualNextPaymentDueDate).toISOString())
+    }
+    
+    // Otherwise calculate based on last payment date
     const nextDueDate = new Date(formData.lastPaymentDate)
     nextDueDate.setDate(nextDueDate.getDate() + 30)
     return formatDate(nextDueDate.toISOString())
@@ -193,8 +286,17 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
   const getCalculatedDaysUntilDue = () => {
     if (!formData.lastPaymentDate) return null
     
-    const nextDueDate = new Date(formData.lastPaymentDate)
-    nextDueDate.setDate(nextDueDate.getDate() + 30)
+    let nextDueDate: Date
+    
+    // If manual date is set, use that
+    if (manualNextPaymentDueDate) {
+      nextDueDate = new Date(manualNextPaymentDueDate)
+    } else {
+      // Otherwise calculate based on last payment date
+      nextDueDate = new Date(formData.lastPaymentDate)
+      nextDueDate.setDate(nextDueDate.getDate() + 30)
+    }
+    
     const now = new Date()
     const daysUntilDue = Math.ceil((nextDueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24))
     
@@ -325,11 +427,15 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Next Payment Due Date
                 </label>
-                <div className="w-full px-3 py-2 border border-gray-300 rounded-md bg-gray-50 text-gray-700">
-                  {getCalculatedNextDueDate()}
-                </div>
+                <input
+                  type="date"
+                  name="manualNextPaymentDueDate"
+                  value={manualNextPaymentDueDate}
+                  onChange={handleManualNextPaymentDueDateChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
                 <p className="text-xs text-gray-500 mt-1">
-                  Automatically calculated
+                  Leave empty to auto-calculate (30 days after last payment)
                 </p>
               </div>
             </div>
@@ -338,11 +444,11 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
               <div className="flex items-center justify-between mb-3">
                 <span className="text-sm font-medium text-gray-700">When User Needs to Pay:</span>
                 <span className={`text-sm font-medium ${
-                  fullUser.nextPaymentDueDate && new Date(fullUser.nextPaymentDueDate) < new Date()
+                  formData.nextPaymentDueDate && new Date(formData.nextPaymentDueDate) < new Date()
                     ? 'text-red-600'
                     : 'text-green-600'
                 }`}>
-                  {fullUser.nextPaymentDueDate ? formatDate(fullUser.nextPaymentDueDate) : 'No payment record'}
+                  {formData.nextPaymentDueDate ? formatDate(formData.nextPaymentDueDate) : 'No payment record'}
                 </span>
               </div>
 
@@ -350,7 +456,9 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
               {formData.lastPaymentDate && (
                 <div className="mb-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm font-medium text-blue-700">Calculated Due Date:</span>
+                    <span className="text-sm font-medium text-blue-700">
+                      {manualNextPaymentDueDate ? 'Manual Due Date:' : 'Calculated Due Date:'}
+                    </span>
                     <span className={`text-sm font-medium ${
                       getCalculatedDaysUntilDue()! < 0
                         ? 'text-red-600'
@@ -362,8 +470,21 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                     </span>
                   </div>
                   <p className="text-xs text-blue-600 mt-1">
-                    Based on last payment date: {formatDate(formData.lastPaymentDate)}
+                    {manualNextPaymentDueDate 
+                      ? 'Manually set due date'
+                      : `Based on last payment date: ${formatDate(formData.lastPaymentDate)}`
+                    }
                   </p>
+                  {getCalculatedDaysUntilDue() !== null && (
+                    <p className="text-xs text-blue-600">
+                      {getCalculatedDaysUntilDue()! < 0 
+                        ? `${Math.abs(getCalculatedDaysUntilDue()!)} days overdue`
+                        : getCalculatedDaysUntilDue()! === 0
+                        ? 'Due today'
+                        : `${getCalculatedDaysUntilDue()} days until due`
+                      }
+                    </p>
+                  )}
                 </div>
               )}
 
@@ -373,7 +494,7 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                     type="checkbox"
                     id="paymentPaid"
                     checked={isPaymentPaid}
-                    onChange={(e) => setIsPaymentPaid(e.target.checked)}
+                    onChange={handlePaymentPaidChange}
                     className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                   />
                   <label htmlFor="paymentPaid" className="ml-2 text-sm text-gray-700">
