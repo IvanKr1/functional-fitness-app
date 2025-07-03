@@ -92,8 +92,16 @@ export const updateUserSchema = z.object({
     email: z.string().email().optional(),
     mobilePhone: z.string().optional(),
     weeklyBookingLimit: z.number().min(1).max(10).optional(),
-    lastPaymentDate: z.string().datetime().optional(),
-    nextPaymentDueDate: z.string().datetime().optional()
+    lastPaymentDate: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid date format').optional(),
+    nextPaymentDueDate: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid date format').optional()
 })
 
 export const updateUserNotesSchema = z.object({
@@ -105,7 +113,11 @@ export const updateBookingLimitSchema = z.object({
 })
 
 export const recordPaymentSchema = z.object({
-    paymentDate: z.string().datetime().optional(),
+    paymentDate: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid date format').optional(),
     amount: z.number().min(0.01, 'Amount must be greater than 0').default(50.00).optional(),
     currency: z.string().length(3, 'Currency must be 3 characters (e.g., EUR, USD)').default('EUR').optional(),
     notes: z.string().max(500, 'Notes too long').optional()
@@ -120,8 +132,14 @@ export const changePasswordSchema = z.object({
  * Booking schemas
  */
 export const createBookingSchema = z.object({
-    startTime: z.string().datetime('Invalid start time format'),
-    endTime: z.string().datetime('Invalid end time format'),
+    startTime: z.string().refine((val) => {
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid start time format'),
+    endTime: z.string().refine((val) => {
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid end time format'),
     notes: z.string().max(500, 'Notes too long').optional()
 }).refine((data) => {
     const start = new Date(data.startTime)
@@ -138,8 +156,16 @@ export const createBookingSchema = z.object({
 })
 
 export const updateBookingSchema = z.object({
-    startTime: z.string().datetime().optional(),
-    endTime: z.string().datetime().optional(),
+    startTime: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid start time format').optional(),
+    endTime: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid end time format').optional(),
     notes: z.string().max(500).optional(),
     status: z.enum(['CONFIRMED', 'CANCELLED', 'COMPLETED']).optional()
 }).refine((data) => {
@@ -163,8 +189,16 @@ export const weekCountQuerySchema = z.object({
 
 export const attendanceQuerySchema = z.object({
     userId: z.string().optional(),
-    startDate: z.string().datetime().optional(),
-    endDate: z.string().datetime().optional(),
+    startDate: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid start date format').optional(),
+    endDate: z.string().refine((val) => {
+        if (!val) return true
+        const date = new Date(val)
+        return !isNaN(date.getTime())
+    }, 'Invalid end date format').optional(),
     month: z.string().regex(/^\d{4}-\d{2}$/, 'Month must be in YYYY-MM format').optional()
 })
 
