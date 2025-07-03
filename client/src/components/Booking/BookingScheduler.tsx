@@ -754,7 +754,7 @@ export const BookingScheduler = () => {
                             variant="outlined"
                             onClick={handleShowBookingHistory}
                             sx={{ textTransform: 'none', fontWeight: 500, ml: 2 }}
-                            className="sm:px-4 sm:py-2 px-3 py-2 text-sm sm:text-base rounded-md sm:rounded-lg"
+                            className="hidden sm:inline-flex sm:px-4 sm:py-2 px-3 py-2 text-sm sm:text-base rounded-md sm:rounded-lg"
                         >
                             Povijest rezervacija
                         </Button>
@@ -766,7 +766,7 @@ export const BookingScheduler = () => {
                         sx={{ textTransform: 'none', fontWeight: 500, width: '100%', mb: 2 }}
                         className="sm:hidden px-3 py-2 text-sm rounded-md w-full"
                     >
-                        Povijest rezervacija
+                       Povijest rezervacija
                     </Button>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="flex-col gap-3 sm:flex-row sm:gap-2">
                         {userBookings.map((booking) => (

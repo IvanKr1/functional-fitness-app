@@ -256,6 +256,15 @@ export const UserDashboard = () => {
             >
                 <Button
                     variant="outlined"
+                    color="primary"
+                    onClick={() => setShowBookingHistory(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500 }}
+                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg mb-2 sm:mb-0"
+                >
+                    Prikaži povijest rezervacija
+                </Button>
+                <Button
+                    variant="outlined"
                     color="warning"
                     onClick={() => setShowResetPasswordDialog(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
@@ -270,6 +279,15 @@ export const UserDashboard = () => {
               className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-gray-200 flex sm:hidden justify-center gap-2 p-3"
               style={{ boxShadow: '0 -2px 8px rgba(0,0,0,0.04)' }}
             >
+                <Button
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => setShowBookingHistory(true)}
+                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
+                    className="px-3 py-2 text-sm rounded-md w-full"
+                >
+                    Prikaži povijest rezervacija
+                </Button>
                 <Button
                     variant="outlined"
                     color="warning"
