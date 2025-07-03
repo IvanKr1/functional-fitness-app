@@ -122,7 +122,7 @@ export const UserDashboard = () => {
                 }
             } catch (error) {
                 console.error('Error fetching user data:', error);
-                setError('Failed to load user data');
+                setError('Neuspjelo učitavanje korisničkog profila');
             } finally {
                 setIsLoading(false);
             }
@@ -152,13 +152,13 @@ export const UserDashboard = () => {
 
             if (response.success && response.data) {
                 setIsEditing(false);
-                setSuccess('Injury notes saved successfully');
+                setSuccess('Informacije o ozljedama su uspješno spremljene');
             } else {
-                setError(response.error || 'Failed to save injury notes');
+                setError(response.error || 'Neuspjelo spremanje informacija o ozljedama');
             }
         } catch (error) {
             console.error('Error saving injury notes:', error);
-            setError('Failed to save injury notes');
+            setError('Neuspjelo spremanje informacija o ozljedama');
         } finally {
             setIsSaving(false);
         }
@@ -167,18 +167,18 @@ export const UserDashboard = () => {
     // Get payment status
     const getPaymentStatus = () => {
         if (!userProfile?.nextPaymentDueDate) {
-            return { status: 'No payment due', color: 'success' as const };
+            return { status: 'Nema dospjelih plaćanja', color: 'success' as const };
         }
 
         const dueDate = new Date(userProfile.nextPaymentDueDate);
         const today = new Date();
 
         if (isBefore(dueDate, today)) {
-            return { status: 'Payment Overdue', color: 'error' as const };
+            return { status: 'Plaćanje kasni', color: 'error' as const };
         } else if (isBefore(dueDate, addDays(today, 7))) {
-            return { status: 'Payment Due Soon', color: 'warning' as const };
+            return { status: 'Plaćanje uskoro dospijeva', color: 'warning' as const };
         } else {
-            return { status: 'Payment Up to Date', color: 'success' as const };
+            return { status: 'Plaćanje je ažurno', color: 'success' as const };
         }
     };
 
@@ -205,13 +205,13 @@ export const UserDashboard = () => {
             if (response.success && response.data) {
                 setResetPasswordResult({ show: true, password: response.data.newPassword });
                 setShowResetPasswordDialog(false);
-                setSuccess('Password reset successfully. Please check the dialog for your new password.');
+                setSuccess('Lozinka je uspješno promijenjena. Ovo je vaša nova lozinka.');
             } else {
-                setError(response.error || 'Failed to reset password');
+                setError(response.error || 'Neuspjelo promijenjivanje lozinke');
             }
         } catch (error) {
             console.error('Error resetting password:', error);
-            setError('Failed to reset password');
+            setError('Neuspjelo promijenjivanje lozinke');
         } finally {
             setIsResettingPassword(false);
         }
@@ -239,7 +239,7 @@ export const UserDashboard = () => {
     if (!userProfile) {
         return (
             <Alert severity="error" sx={{ mt: 2 }}>
-                Failed to load user profile
+                Neuspjelo učitavanje korisničkog profila
             </Alert>
         );
     }
@@ -256,21 +256,12 @@ export const UserDashboard = () => {
             >
                 <Button
                     variant="outlined"
-                    color="primary"
-                    onClick={() => setShowBookingHistory(true)}
-                    sx={{ textTransform: 'none', fontWeight: 500 }}
-                    className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg mb-2 sm:mb-0"
-                >
-                    Show Booking History
-                </Button>
-                <Button
-                    variant="outlined"
                     color="warning"
                     onClick={() => setShowResetPasswordDialog(true)}
                     sx={{ textTransform: 'none', fontWeight: 500 }}
                     className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                 >
-                    Reset Password
+                    Promijeni lozinku
                 </Button>
             </Box>
 
@@ -281,21 +272,12 @@ export const UserDashboard = () => {
             >
                 <Button
                     variant="outlined"
-                    color="primary"
-                    onClick={() => setShowBookingHistory(true)}
-                    sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
-                    className="px-3 py-2 text-sm rounded-md w-full"
-                >
-                    Show Booking History
-                </Button>
-                <Button
-                    variant="outlined"
                     color="warning"
                     onClick={() => setShowResetPasswordDialog(true)}
                     sx={{ textTransform: 'none', fontWeight: 500, flex: 1 }}
                     className="px-3 py-2 text-sm rounded-md w-full"
                 >
-                    Reset Password
+                    Promijeni lozinku
                 </Button>
             </Box>
 
@@ -306,7 +288,7 @@ export const UserDashboard = () => {
                   className="flex-col sm:flex-row sm:items-center items-start gap-2"
                 >
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                        Welcome back, {userProfile.name}!
+                        Dobrodošao natrag, {userProfile.name}!
                     </Typography>
                     <Button
                         variant="outlined"
@@ -314,11 +296,11 @@ export const UserDashboard = () => {
                         sx={{ textTransform: 'none', fontWeight: 500 }}
                         className="sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg hidden sm:inline-flex"
                     >
-                        Book Training
+                        Rezerviraj trening
                     </Button>
                 </Box>
                 <Typography variant="body1" color="text.secondary">
-                    Here's your fitness journey overview
+                    Ovo je pregled tvog fitness putovanja
                 </Typography>
             </Box>
 
@@ -342,32 +324,32 @@ export const UserDashboard = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <Event sx={{ mr: 1, color: theme.palette.primary.main }} />
                                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                    Training Information
+                                    Informacije o treninzima
                                 </Typography>
                             </Box>
 
                             <Box sx={{ mb: 2 }}>
                                 <Typography variant="body2" color="text.secondary">
-                                    Weekly Booking Limit
+                                    Tjedni limit rezervacija
                                 </Typography>
                                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {userProfile.weeklyBookingLimit} sessions per week
+                                    {userProfile.weeklyBookingLimit} treninga tjedno
                                 </Typography>
                             </Box>
 
                             <Box sx={{ mb: 2 }}>
                                 <Typography variant="body2" color="text.secondary">
-                                    Total Bookings This Week
+                                    Ukupno rezervacija ovaj tjedan
                                 </Typography>
                                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
-                                    {bookings.length} sessions
+                                    {bookings.length} treninga
                                 </Typography>
                             </Box>
 
                             {upcomingBookings.length > 0 && (
                                 <Box>
                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                        Next Training Sessions
+                                        Sljedeći treninzi
                                     </Typography>
                                     {upcomingBookings.map((booking) => (
                                         <Box key={booking.id} sx={{ mb: 1 }}>
@@ -392,13 +374,13 @@ export const UserDashboard = () => {
                             <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                 <CreditCard sx={{ mr: 1, color: theme.palette.primary.main }} />
                                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                    Payment Information
+                                    Informacije o plaćanju
                                 </Typography>
                             </Box>
                             
                             <Box sx={{ mb: 2 }}>
                                 <Chip
-                                    label={paymentStatus.status}
+                                    label={paymentStatus.status === 'Plaćanje je ažurno' ? 'Plaćanje je ažurno' : paymentStatus.status === 'Plaćanje kasni' ? 'Plaćanje kasni' : paymentStatus.status === 'Plaćanje uskoro dospijeva' ? 'Plaćanje uskoro dospijeva' : 'Nema dospjelih plaćanja'}
                                     color={paymentStatus.color}
                                     sx={{ mb: 2 }}
                                 />
@@ -407,7 +389,7 @@ export const UserDashboard = () => {
                             {userProfile.lastPaymentDate && (
                                 <Box sx={{ mb: 2 }}>
                                     <Typography variant="body2" color="text.secondary">
-                                        Last Payment
+                                        Zadnje plaćanje
                                     </Typography>
                                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         {format(new Date(userProfile.lastPaymentDate), 'MMMM d, yyyy')}
@@ -418,7 +400,7 @@ export const UserDashboard = () => {
                             {userProfile.nextPaymentDueDate && (
                                 <Box>
                                     <Typography variant="body2" color="text.secondary">
-                                        Next Payment Due
+                                        Sljedeće plaćanje dospijeva
                                     </Typography>
                                     <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                         {format(new Date(userProfile.nextPaymentDueDate), 'MMMM d, yyyy')}
@@ -437,7 +419,7 @@ export const UserDashboard = () => {
                                 <Box sx={{ display: 'flex', alignItems: 'center' }}>
                                     <Warning sx={{ mr: 1, color: theme.palette.warning.main }} />
                                     <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                                        Injury & Health Information
+                                        Informacije o ozljedama i zdravlju
                                     </Typography>
                                 </Box>
                                 {!isEditing && (
@@ -447,14 +429,13 @@ export const UserDashboard = () => {
                                         variant="outlined"
                                         size="small"
                                     >
-                                        Edit
+                                        Uredi
                                     </Button>
                                 )}
                             </Box>
 
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                Please provide information about any injuries you have or have had, 
-                                as well as any health conditions that might affect your training.
+                                Molimo unesite informacije o ozljedama ili zdravstvenim stanjima koja mogu utjecati na vaš trening.
                             </Typography>
 
                             {isEditing ? (
@@ -465,7 +446,7 @@ export const UserDashboard = () => {
                                         rows={6}
                                         value={injuryNotes}
                                         onChange={(e) => setInjuryNotes(e.target.value)}
-                                        placeholder="Describe any injuries, health conditions, or concerns that might affect your training..."
+                                        placeholder="Opišite ozljede, zdravstvena stanja ili zabrinutosti koje mogu utjecati na vaš trening..."
                                         variant="outlined"
                                         sx={{ mb: 2 }}
                                     />
@@ -476,7 +457,7 @@ export const UserDashboard = () => {
                                             disabled={isSaving}
                                             startIcon={isSaving ? <CircularProgress size={16} /> : <Save />}
                                         >
-                                            {isSaving ? 'Saving...' : 'Save Notes'}
+                                            {isSaving ? 'Spremanje...' : 'Spremi bilješke'}
                                         </Button>
                                         <Button
                                             variant="outlined"
@@ -485,7 +466,7 @@ export const UserDashboard = () => {
                                                 setInjuryNotes(userProfile.notes || '');
                                             }}
                                         >
-                                            Cancel
+                                            Odustani
                                         </Button>
                                     </Box>
                                 </Box>
@@ -504,8 +485,7 @@ export const UserDashboard = () => {
                                         </Typography>
                                     ) : (
                                         <Typography variant="body2" color="text.secondary" sx={{ fontStyle: 'italic' }}>
-                                            No injury or health information provided yet. 
-                                            Click "Edit" to add your information.
+                                            Nema unesenih informacija o ozljedama ili zdravlju. Kliknite "Uredi" za unos informacija.
                                         </Typography>
                                     )}
                                 </Paper>
@@ -522,7 +502,7 @@ export const UserDashboard = () => {
                 maxWidth="xs"
                 fullWidth
             >
-                <DialogTitle>Reset Password</DialogTitle>
+                <DialogTitle>Promijeni lozinku</DialogTitle>
                 <DialogContent>
                     <ResetPasswordForm onSuccess={() => setShowResetPasswordDialog(false)} onCancel={() => setShowResetPasswordDialog(false)} />
                 </DialogContent>
@@ -538,12 +518,12 @@ export const UserDashboard = () => {
                 <DialogTitle>
                     <Box sx={{ display: 'flex', alignItems: 'center' }}>
                         <Key sx={{ mr: 1, color: theme.palette.success.main }} />
-                        Password Reset Successful
+                        Lozinka je uspješno promijenjena
                     </Box>
                 </DialogTitle>
                 <DialogContent>
                     <Typography variant="body1" sx={{ mb: 2 }}>
-                        Your password has been reset successfully. Here's your new password:
+                        Vaša lozinka je uspješno promijenjena. Ovo je vaša nova lozinka:
                     </Typography>
                     <Paper
                         variant="outlined"
@@ -566,7 +546,7 @@ export const UserDashboard = () => {
                         </Typography>
                     </Paper>
                     <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
-                        <strong>Important:</strong> Please copy this password and save it securely. You'll need it to log in next time.
+                        <strong>Važno:</strong> Kopirajte ovu lozinku i spremite ju na sigurno. Trebat će vam za sljedeću prijavu.
                     </Typography>
                 </DialogContent>
                 <DialogActions>
@@ -576,14 +556,14 @@ export const UserDashboard = () => {
                         }}
                         variant="outlined"
                     >
-                        Copy Password
+                        Kopiraj lozinku
                     </Button>
                     <Button
                         onClick={closeResetPasswordResult}
                         variant="contained"
                         color="primary"
                     >
-                        Close
+                        Zatvori
                     </Button>
                 </DialogActions>
             </Dialog>

@@ -23,10 +23,39 @@ import { format, addDays, startOfWeek, endOfWeek, addWeeks, isAfter, isBefore, i
 import { useStore } from '../../store/useStore';
 import { apiService } from '../../services/api.js';
 import type { ViewMode } from '../../types';
+import { BookingHistoryModal } from '../BookingHistoryModal'
 
 
 // Maximum number of bookings allowed per time slot
 const MAX_BOOKINGS_PER_SLOT = 10;
+
+// Croatian weekday and month names
+const HR_WEEKDAYS = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota']
+const HR_MONTHS = ['siječnja', 'veljače', 'ožujka', 'travnja', 'svibnja', 'lipnja', 'srpnja', 'kolovoza', 'rujna', 'listopada', 'studenoga', 'prosinca']
+
+/**
+ * Format a date as 'DAN, DD. mjeseca' in Croatian
+ * @param {Date} date
+ * @returns {string}
+ */
+function formatDateCroatian (date: Date) {
+  const day = HR_WEEKDAYS[date.getDay()]
+  const dayNum = date.getDate()
+  const month = HR_MONTHS[date.getMonth()]
+  return `${day}, ${dayNum}. ${month}`
+}
+
+/**
+ * Format a date as 'DD. mjeseca YYYY.' in Croatian
+ * @param {Date} date
+ * @returns {string}
+ */
+function formatDateCroatianFull (date: Date) {
+  const dayNum = date.getDate()
+  const month = HR_MONTHS[date.getMonth()]
+  const year = date.getFullYear()
+  return `${dayNum}. ${month} ${year}.`
+}
 
 export const BookingScheduler = () => {
     const theme = useTheme();
@@ -45,6 +74,7 @@ export const BookingScheduler = () => {
     const [isBookingLoading, setIsBookingLoading] = useState(false);
     const [isResetLoading, setIsResetLoading] = useState(false);
     const [isRemoveLoading, setIsRemoveLoading] = useState(false);
+    const [showBookingHistory, setShowBookingHistory] = useState(false);
 
     // Fetch user bookings from database on component mount
     useEffect(() => {
@@ -467,21 +497,17 @@ export const BookingScheduler = () => {
         if (selectedDate.getDay() === 0) {
             return (
                 <Typography color="error" sx={{ mt: 2, fontWeight: 500 }}>
-                    Booking is not available on Sundays.
+                    Rezervacija nije moguća nedjeljom.
                 </Typography>
             );
         }
-
-        // Check if date is within 2-week advance booking window
         if (!isWithinBookingWindow(selectedDate)) {
             return (
                 <Typography color="error" sx={{ mt: 2, fontWeight: 500 }}>
-                    You can only book up to 2 weeks in advance.
+                    Možete rezervirati najviše 2 tjedna unaprijed.
                 </Typography>
             );
         }
-
-        // Booking rules for disabling all slots
         const hasUserBookingForDay =
             currentUser &&
             bookings.some(
@@ -500,23 +526,21 @@ export const BookingScheduler = () => {
               )
             : [];
         const isDisabled = hasUserBookingForDay || weeklyBookings.length >= 3;
-
         if (isDisabled) {
             return (
                 <Typography color="error" sx={{ mt: 2 }}>
                     {hasUserBookingForDay
-                        ? 'You already have a booking for this day.'
-                        : 'You have reached the weekly booking limit.'}
+                        ? 'Već imate rezervaciju za ovaj dan.'
+                        : 'Dosegli ste tjedni limit rezervacija.'}
                 </Typography>
             );
         }
-
         const slots = generateFixedSlots();
         return (
             <Box sx={{ width: '100%' }}>
                 {/* Date and timezone header */}
                 <Typography variant="h6" sx={{ fontWeight: 500, mb: 0.5, mt: { xs: 2, md: 0 } }}>
-                    {format(selectedDate, 'EEEE, MMMM d')}
+                    {formatDateCroatian(selectedDate)}
                 </Typography>
                 <Typography
                     variant="caption"
@@ -530,7 +554,7 @@ export const BookingScheduler = () => {
                         display: 'block',
                     }}
                 >
-                    Time Zone: {timeZoneLabel}
+                    Vremenska zona: {timeZoneLabel}
                 </Typography>
                 <Box
                     sx={{
@@ -542,8 +566,8 @@ export const BookingScheduler = () => {
                     }}
                 >
                     {slots.map(({ start, end }) => {
-                        const slotLabel = `${format(start, 'HH:mm')}`;
-                        const slotKey = format(start, 'HH:mm') + ' - ' + format(end, 'HH:mm');
+                        const slotLabel = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')}`
+                        const slotKey = `${slotLabel} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
                         const isSelected = uiSelectedSlot === slotKey;
                         const now = new Date();
                         const isPastTime = start <= now;
@@ -551,13 +575,11 @@ export const BookingScheduler = () => {
                         const startHour = start.getHours();
                         let isOutsideHours;
                         if (selectedDate.getDay() === 6) {
-                            // Allow 11:00 slot on Saturday
                             isOutsideHours = startHour < 7 || startHour > 11;
                         } else {
                             isOutsideHours = startHour < 7 || startHour > 20;
                         }
                         const isDisabled = isPastTime || isOutsideHours || isLessThan2Hours;
-                        
                         const baseStyles = {
                             width: '100%',
                             border: '1px solid',
@@ -580,7 +602,6 @@ export const BookingScheduler = () => {
                             transition: 'background 0.15s, border-color 0.15s, color 0.15s',
                             opacity: isDisabled ? 0.6 : 1,
                         };
-
                         return (
                             <Box component="button"
                                 key={slotKey}
@@ -644,6 +665,32 @@ export const BookingScheduler = () => {
         );
     };
 
+    function handleShowBookingHistory () {
+        setShowBookingHistory(true)
+    }
+
+    const now = new Date()
+    const last30DaysBookings = bookings
+      .filter(b => b.userId === currentUser?.id)
+      .map(b => {
+        // Compose a full ISO string for startTime/endTime for the modal
+        const dateStr = b.date
+        const start = new Date(`${dateStr}T${b.startTime.length === 5 ? b.startTime : b.startTime.padStart(5, '0')}`)
+        const end = new Date(`${dateStr}T${b.endTime.length === 5 ? b.endTime : b.endTime.padStart(5, '0')}`)
+        return {
+          ...b,
+          startTime: start.toISOString(),
+          endTime: end.toISOString(),
+          status: b.status || '',
+          notes: b.notes || ''
+        }
+      })
+      .filter(b => {
+        const d = new Date(b.startTime)
+        return d >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000) && d < now
+      })
+      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())
+
     return (
         <Paper
             elevation={0}
@@ -658,7 +705,7 @@ export const BookingScheduler = () => {
             {isLoadingBookings && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', mb: 3 }}>
                     <Typography variant="body2" color="text.secondary">
-                        Loading your bookings...
+                        Učitavanje vaših rezervacija...
                     </Typography>
                 </Box>
             )}
@@ -667,7 +714,7 @@ export const BookingScheduler = () => {
             <Box sx={{ mb: 4 }}>
                 <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
                     <Typography variant="h4" sx={{ fontWeight: 600 }} className="text-2xl sm:text-4xl leading-tight">
-                        Book Your Gym Session
+                        Rezerviraj svoj termin u teretani
                     </Typography>
                     {currentUser && currentUser.role === 'USER' && (
                         <Button
@@ -676,15 +723,15 @@ export const BookingScheduler = () => {
                             sx={{ textTransform: 'none', fontWeight: 500 }}
                             className="hidden sm:inline-flex sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                         >
-                            View Dashboard
+                            Prikaži nadzornu ploču
                         </Button>
                     )}
                 </Box>
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }} className="text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
                     <ul className="list-none p-0 m-0 text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
-                      <li>Select a date and time slot to book your fitness session.</li>
-                      <li>You can book up to 3 sessions per week, up to 2 weeks in advance.</li>
-                      <li>You can only cancel a booking up to 2 hours before the session starts.</li>
+                      <li>Odaberite datum i termin za rezervaciju treninga.</li>
+                      <li>Možete rezervirati do 3 termina tjedno, najviše 2 tjedna unaprijed.</li>
+                      <li>Rezervaciju možete otkazati najkasnije 2 sata prije početka termina.</li>
                     </ul>
                 </Typography>
             </Box>
@@ -701,25 +748,25 @@ export const BookingScheduler = () => {
                         }}
                     >
                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
-                            Your Upcoming Bookings
+                            Vaše nadolazeće rezervacije
                         </Typography>
-                        {/* <Button
+                        <Button
                             variant="outlined"
-                            onClick={handleResetLimits}
-                            sx={{ textTransform: 'none', fontWeight: 500 }}
-                            className="hidden sm:inline-flex sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
+                            onClick={handleShowBookingHistory}
+                            sx={{ textTransform: 'none', fontWeight: 500, ml: 2 }}
+                            className="sm:px-4 sm:py-2 px-3 py-2 text-sm sm:text-base rounded-md sm:rounded-lg"
                         >
-                            Reset All Bookings
-                        </Button> */}
+                            Povijest rezervacija
+                        </Button>
                     </Box>
                     {/* Mobile: show Reset button below heading */}
                     <Button
                         variant="outlined"
-                        onClick={handleResetLimits}
+                        onClick={handleShowBookingHistory}
                         sx={{ textTransform: 'none', fontWeight: 500, width: '100%', mb: 2 }}
                         className="sm:hidden px-3 py-2 text-sm rounded-md w-full"
                     >
-                        Reset All Bookings
+                        Povijest rezervacija
                     </Button>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="flex-col gap-3 sm:flex-row sm:gap-2">
                         {userBookings.map((booking) => (
@@ -738,7 +785,7 @@ export const BookingScheduler = () => {
                             >
                                 <CardContent className="p-0">
                                     <Typography variant="h6" sx={{ mb: 1, fontWeight: 500 }} className="text-lg sm:text-xl mb-1">
-                                        {format(new Date(booking.date), 'EEEE, MMMM d')}
+                                        {formatDateCroatian(new Date(booking.date))}
                                     </Typography>
                                     <Typography
                                         variant="body1"
@@ -759,7 +806,7 @@ export const BookingScheduler = () => {
                                         className="sm:px-4 sm:py-2 px-3 py-2 text-sm sm:text-base rounded-md sm:rounded-lg"
                                         disabled={(new Date(`${booking.date}T${booking.startTime}`).getTime() - Date.now()) < 2 * 60 * 60 * 1000}
                                     >
-                                        Cancel Booking
+                                        Otkaži rezervaciju
                                     </Button>
                                 </CardContent>
                             </Card>
@@ -843,11 +890,10 @@ export const BookingScheduler = () => {
                     },
                 }}
             >
-                <DialogTitle sx={{ pb: 1 }}>Confirm Booking</DialogTitle>
+                <DialogTitle sx={{ pb: 1 }}>Potvrdi rezervaciju</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to book the slot {selectedSlot} on{' '}
-                        {format(selectedDate, 'MMMM d, yyyy')}?
+                        Jeste li sigurni da želite rezervirati termin {selectedSlot} za datum {formatDateCroatianFull(selectedDate)}?
                     </Typography>
                     {bookingError && (
                         <Typography
@@ -869,7 +915,7 @@ export const BookingScheduler = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Cancel
+                        Odustani
                     </Button>
                     <Button
                         onClick={handleBookingConfirm}
@@ -881,7 +927,7 @@ export const BookingScheduler = () => {
                             px: 3,
                         }}
                     >
-                        {isBookingLoading ? <CircularProgress size={20} color="inherit" /> : 'Confirm'}
+                        {isBookingLoading ? <CircularProgress size={20} color="inherit" /> : 'Potvrdi'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -897,10 +943,10 @@ export const BookingScheduler = () => {
                     },
                 }}
             >
-                <DialogTitle sx={{ pb: 1 }}>Cancel Booking</DialogTitle>
+                <DialogTitle sx={{ pb: 1 }}>Otkaži rezervaciju</DialogTitle>
                 <DialogContent>
                     <Typography>
-                        Are you sure you want to cancel this booking? This action cannot be undone.
+                        Jeste li sigurni da želite otkazati ovu rezervaciju? Ova radnja je nepovratna.
                     </Typography>
                 </DialogContent>
                 <DialogActions sx={{ px: 3, pb: 2 }}>
@@ -911,7 +957,7 @@ export const BookingScheduler = () => {
                             fontWeight: 500,
                         }}
                     >
-                        Keep Booking
+                        Zadrži rezervaciju
                     </Button>
                     <Button
                         onClick={handleConfirmRemove}
@@ -924,7 +970,7 @@ export const BookingScheduler = () => {
                             px: 3,
                         }}
                     >
-                        {isRemoveLoading ? <CircularProgress size={20} color="inherit" /> : 'Cancel Booking'}
+                        {isRemoveLoading ? <CircularProgress size={20} color="inherit" /> : 'Otkaži rezervaciju'}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -972,6 +1018,8 @@ export const BookingScheduler = () => {
                     </Button>
                 </DialogActions>
             </Dialog> */}
+
+            <BookingHistoryModal open={showBookingHistory} onClose={() => setShowBookingHistory(false)} bookings={last30DaysBookings} />
         </Paper>
     );
 };
