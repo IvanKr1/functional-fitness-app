@@ -551,7 +551,8 @@ export const BookingScheduler = () => {
                         const startHour = start.getHours();
                         let isOutsideHours;
                         if (selectedDate.getDay() === 6) {
-                            isOutsideHours = startHour < 7 || startHour > 10;
+                            // Allow 11:00 slot on Saturday
+                            isOutsideHours = startHour < 7 || startHour > 11;
                         } else {
                             isOutsideHours = startHour < 7 || startHour > 20;
                         }
@@ -702,18 +703,24 @@ export const BookingScheduler = () => {
                         <Typography variant="h6" sx={{ fontWeight: 500 }}>
                             Your Upcoming Bookings
                         </Typography>
-                    </Box>
-                    <Box className="mt-3 mb-6">
-                        <Button
+                        {/* <Button
                             variant="outlined"
-                            color="primary"
                             onClick={handleResetLimits}
-                            sx={{ textTransform: 'none', fontWeight: 500, backgroundColor: 'white', borderColor: '#2563eb', color: '#2563eb', boxShadow: 'none', transition: 'all 0.2s', '&:hover': { backgroundColor: '#f0f7ff', borderColor: '#2563eb', boxShadow: 'none' }, '&:focus': { outline: '2px solid #2563eb' } }}
-                            className="block w-full sm:inline-block sm:w-auto border border-blue-600 text-blue-600 bg-white font-medium rounded-lg px-6 py-2 text-base sm:text-base text-sm min-w-0 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-200 transition-all"
+                            sx={{ textTransform: 'none', fontWeight: 500 }}
+                            className="hidden sm:inline-flex sm:px-6 sm:py-2 px-3 py-2 text-base sm:text-base text-sm rounded-md sm:rounded-lg"
                         >
                             Reset All Bookings
-                        </Button>
+                        </Button> */}
                     </Box>
+                    {/* Mobile: show Reset button below heading */}
+                    <Button
+                        variant="outlined"
+                        onClick={handleResetLimits}
+                        sx={{ textTransform: 'none', fontWeight: 500, width: '100%', mb: 2 }}
+                        className="sm:hidden px-3 py-2 text-sm rounded-md w-full"
+                    >
+                        Reset All Bookings
+                    </Button>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }} className="flex-col gap-3 sm:flex-row sm:gap-2">
                         {userBookings.map((booking) => (
                             <Card
@@ -923,7 +930,7 @@ export const BookingScheduler = () => {
             </Dialog>
 
             {/* Reset booking limits confirmation dialog */}
-            <Dialog
+            {/* <Dialog
                 open={isResetDialogOpen}
                 onClose={() => setIsResetDialogOpen(false)}
                 PaperProps={{
@@ -964,7 +971,7 @@ export const BookingScheduler = () => {
                         {isResetLoading ? <CircularProgress size={20} color="inherit" /> : 'Reset All'}
                     </Button>
                 </DialogActions>
-            </Dialog>
+            </Dialog> */}
         </Paper>
     );
 };

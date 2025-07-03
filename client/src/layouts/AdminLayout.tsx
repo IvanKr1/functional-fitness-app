@@ -15,11 +15,15 @@ export function AdminLayout({ children }: AdminLayoutProps) {
 
   const handleLogout = async () => {
     await logout()
-    navigate('/login')
+    window.location.href = '/login'
   }
 
   const handleToggleSidebar = () => {
     setSidebarOpen(!sidebarOpen)
+  }
+
+  if (!currentUser || currentUser.role !== 'ADMIN') {
+    return <div>Access denied</div>;
   }
 
   return (

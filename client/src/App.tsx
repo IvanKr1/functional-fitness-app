@@ -16,17 +16,13 @@ const PrivateRoute = ({ children }: { children: React.ReactNode }) => {
     const { currentUser, isAuthenticated, getProfile, isLoading, error, clearError } = useStore();
     
     useEffect(() => {
-        // Only check authentication if not already authenticated and not on login page
-        if (!isAuthenticated && !isLoading) {
-            getProfile();
-        }
-        // Clear error if on login page
+        getProfile();
         return () => {
             if (window.location.pathname === '/login') {
                 clearError();
             }
         };
-    }, [isAuthenticated, isLoading, getProfile, clearError]);
+    }, [getProfile, clearError]);
     
     if (isLoading) {
         return (

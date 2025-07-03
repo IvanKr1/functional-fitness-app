@@ -44,9 +44,9 @@ const isWithinBookingHours = (startTime: Date, endTime: Date): boolean => {
         return false
     }
 
-    // Saturday: allow slots starting at 7:00 up to 10:00, ending at 11:00
+    // Saturday: allow slots starting at 7:00 up to 11:00, ending at 12:00
     if (dayOfWeek === 6) {
-        return startHour >= 7 && startHour <= 10 && endHour === startHour + 1 && endHour <= 11 && startTime < endTime
+        return startHour >= 7 && startHour <= 11 && endHour === startHour + 1 && endHour <= 12 && startTime < endTime
     }
 
     // Monday-Friday: allow slots starting at 7:00 up to 20:00, ending at 21:00
@@ -150,7 +150,7 @@ export const createBooking = async (
         if (dayOfWeek === 0) {
             throw new ValidationError('Bookings are not available on Sundays')
         } else if (dayOfWeek === 6) {
-            throw new ValidationError('Saturday bookings must be between 07:00 and 10:00')
+            throw new ValidationError('Saturday bookings must be between 07:00 and 11:00')
         } else {
             throw new ValidationError('Bookings must be between 07:00 and 20:00')
         }
