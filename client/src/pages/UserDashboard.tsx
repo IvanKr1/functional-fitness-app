@@ -112,8 +112,10 @@ export const UserDashboard = () => {
                         id: booking.id,
                         userId: currentUser.id,
                         userName: currentUser.name,
-                        startTime: format(new Date(booking.startTime), 'HH:mm'),
-                        endTime: format(new Date(booking.endTime), 'HH:mm'),
+                        startTime: booking.startTime,
+                        endTime: booking.endTime,
+                        status: booking.status,
+                        notes: booking.notes || '',
                         date: format(new Date(booking.startTime), 'yyyy-MM-dd'),
                     }));
                     setBookings(userBookings);
@@ -219,10 +221,11 @@ export const UserDashboard = () => {
         setResetPasswordResult({ show: false, password: '' });
     };
 
-    // Filter bookings from the last 30 days
+    // Filter bookings from the last 30 days and only in the past
+    const now = new Date();
     const last30DaysBookings = bookings.filter(b => {
         const date = new Date(b.startTime)
-        return date >= subDays(new Date(), 30)
+        return date >= subDays(now, 30) && date < now
     })
 
     if (isLoading) {
