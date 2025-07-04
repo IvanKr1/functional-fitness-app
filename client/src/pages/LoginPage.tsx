@@ -14,7 +14,7 @@ import { useStore } from '../store/useStore';
 
 export const LoginPage = () => {
     const navigate = useNavigate();
-    const { login, currentUser, isAuthenticated, isLoading, error, clearError } = useStore();
+    const { login, currentUser, isAuthenticated, isLoading, error, clearError, setIsLoading } = useStore();
     const [formData, setFormData] = useState({
         email: '',
         password: ''
@@ -27,10 +27,11 @@ export const LoginPage = () => {
         }
     }, [isAuthenticated, currentUser, navigate]);
 
-    // Clear error when component mounts
+    // Clear error and loading when component mounts
     useEffect(() => {
         clearError();
-    }, [clearError]);
+        setIsLoading(false);
+    }, [clearError, setIsLoading]);
 
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;

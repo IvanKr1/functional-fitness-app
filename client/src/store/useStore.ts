@@ -15,6 +15,7 @@ interface AppState extends AuthState {
     removeBooking: (bookingId: string) => void;
     setBookings: (bookings: Booking[]) => void;
     updateSchedules: (schedules: DaySchedule[]) => void;
+    setIsLoading: (isLoading: boolean) => void;
 }
 
 export const useStore = create<AppState>()(
@@ -124,6 +125,7 @@ export const useStore = create<AppState>()(
                 })),
             setBookings: (bookings) => set({ bookings }),
             updateSchedules: (schedules) => set({ schedules }),
+            setIsLoading: (isLoading) => set({ isLoading }),
         }),
         {
             name: 'gym-booking-storage',
