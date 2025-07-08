@@ -238,7 +238,7 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
       }
 
       // If payment is marked as paid, record the payment
-      if (isPaymentPaid && fullUser.role !== 'ADMIN') {
+      if (isPaymentPaid) {
         const paymentResponse = await apiService.post<RecordPaymentResponse>(`/payments/${fullUser.id}`, {
           amount: 50.00, // Fixed amount
           currency: 'EUR',
@@ -488,20 +488,18 @@ export function EditUserForm({ user, onClose, onUserUpdated }: EditUserFormProps
                 </div>
               )}
 
-              {fullUser.role !== 'ADMIN' && (
-                <div className="flex items-center">
-                  <input
-                    type="checkbox"
-                    id="paymentPaid"
-                    checked={isPaymentPaid}
-                    onChange={handlePaymentPaidChange}
-                    className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                  />
-                  <label htmlFor="paymentPaid" className="ml-2 text-sm text-gray-700">
-                    Mark payment as paid
-                  </label>
-                </div>
-              )}
+              <div className="flex items-center">
+                <input
+                  type="checkbox"
+                  id="paymentPaid"
+                  checked={isPaymentPaid}
+                  onChange={handlePaymentPaidChange}
+                  className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                />
+                <label htmlFor="paymentPaid" className="ml-2 text-sm text-gray-700">
+                  Mark payment as paid
+                </label>
+              </div>
             </div>
           </div>
 
