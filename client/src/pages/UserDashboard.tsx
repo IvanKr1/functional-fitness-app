@@ -58,6 +58,10 @@ interface ResetPasswordResponse {
     error?: string;
 }
 
+// Croatian weekday and month names
+const HR_WEEKDAYS = ['Nedjelja', 'Ponedjeljak', 'Utorak', 'Srijeda', 'Četvrtak', 'Petak', 'Subota']
+const HR_MONTHS = ['siječnja', 'veljače', 'ožujka', 'travnja', 'svibnja', 'lipnja', 'srpnja', 'kolovoza', 'rujna', 'listopada', 'studenoga', 'prosinca']
+
 export const UserDashboard = () => {
     const theme = useTheme();
     const navigate = useNavigate();
@@ -353,6 +357,9 @@ export const UserDashboard = () => {
                                 <Typography variant="body1" sx={{ fontWeight: 500 }}>
                                     {userProfile.weeklyBookingLimit} treninga tjedno
                                 </Typography>
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                    Rezervacije je moguće napraviti najviše 1 tjedan unaprijed.
+                                </Typography>
                             </Box>
 
                             <Box sx={{ mb: 2 }}>
@@ -369,16 +376,22 @@ export const UserDashboard = () => {
                                     <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
                                         Sljedeći treninzi
                                     </Typography>
-                                    {upcomingBookings.map((booking) => (
-                                        <Box key={booking.id} sx={{ mb: 1 }}>
-                                            <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                                {format(new Date(booking.date), 'EEEE, MMMM d')}
-                                            </Typography>
-                                            <Typography variant="body2" color="text.secondary">
-                                                {booking.startTime} - {booking.endTime}
-                                            </Typography>
-                                        </Box>
-                                    ))}
+                                    {upcomingBookings.map((booking) => {
+                                        const start = new Date(booking.startTime)
+                                        const end = new Date(booking.endTime)
+                                        const day = HR_WEEKDAYS[start.getDay()]
+                                        const dayNum = start.getDate()
+                                        const month = HR_MONTHS[start.getMonth()]
+                                        const dateStr = `${day}, ${dayNum}. ${month}`
+                                        const timeStr = `${start.getHours().toString().padStart(2, '0')}:${start.getMinutes().toString().padStart(2, '0')} - ${end.getHours().toString().padStart(2, '0')}:${end.getMinutes().toString().padStart(2, '0')}`
+                                        return (
+                                            <Box key={booking.id} sx={{ mb: 1 }}>
+                                                <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                                    {`${dateStr}, ${timeStr}`}
+                                                </Typography>
+                                            </Box>
+                                        )
+                                    })}
                                 </Box>
                             )}
                         </CardContent>
