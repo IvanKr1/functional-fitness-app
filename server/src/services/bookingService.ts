@@ -54,19 +54,19 @@ const isWithinBookingHours = (startTime: Date, endTime: Date): boolean => {
 }
 
 /**
- * Check if booking is within 2-week advance booking limit
+ * Check if booking is within 1-week advance booking limit
  */
 const isWithinBookingWindow = (startTime: Date): boolean => {
     const today = new Date()
     today.setHours(0, 0, 0, 0) // Start of today
 
-    const twoWeeksFromNow = new Date(today)
-    twoWeeksFromNow.setDate(today.getDate() + 14) // 2 weeks from today
+    const oneWeekFromNow = new Date(today)
+    oneWeekFromNow.setDate(today.getDate() + 7) // 1 week from today
 
     const bookingDate = new Date(startTime)
     bookingDate.setHours(0, 0, 0, 0) // Start of booking day
 
-    return bookingDate >= today && bookingDate <= twoWeeksFromNow
+    return bookingDate >= today && bookingDate <= oneWeekFromNow
 }
 
 /**
@@ -136,12 +136,12 @@ export const createBooking = async (
     const startTime = new Date(startTimeStr)
     const endTime = new Date(endTimeStr)
 
-    // Enforce booking at least 2 hours in advance
+    // Enforce booking at least 1 hour in advance
     const nowCreate = new Date()
     const diffMs = startTime.getTime() - nowCreate.getTime()
     const diffHours = diffMs / (1000 * 60 * 60)
-    if (diffHours < 2) {
-        throw new ValidationError('Bookings must be scheduled at least 2 hours in advance')
+    if (diffHours < 1) {
+        throw new ValidationError('Bookings must be scheduled at least 1 hour in advance')
     }
 
     // Validate time slot
@@ -156,9 +156,9 @@ export const createBooking = async (
         }
     }
 
-    // Check if booking is within 2-week advance booking limit
+    // Check if booking is within 1-week advance booking limit
     if (!isWithinBookingWindow(startTime)) {
-        throw new ValidationError('You can only book up to 2 weeks in advance')
+        throw new ValidationError('You can only book up to 1 week in advance')
     }
 
     // Check if booking is in the future
@@ -292,8 +292,8 @@ export const updateBooking = async (
         const timeDiff = existingBooking.startTime.getTime() - now.getTime()
         const hoursUntilBooking = timeDiff / (1000 * 60 * 60)
 
-        if (hoursUntilBooking < 2) {
-            throw new ValidationError('Cannot reschedule booking less than 2 hours before start time')
+        if (hoursUntilBooking < 1) {
+            throw new ValidationError('Cannot reschedule booking less than 1 hour before start time')
         }
     }
 
@@ -367,13 +367,13 @@ export const deleteBooking = async (
         throw new AuthorizationError('You can only delete your own bookings')
     }
 
-    // Enforce cancellation at least 2 hours before start time (unless admin)
+    // Enforce cancellation at least 1 hour before start time (unless admin)
     if (userRole !== Role.ADMIN) {
         const nowDelete = new Date()
         const diffMs = booking.startTime.getTime() - nowDelete.getTime()
         const diffHours = diffMs / (1000 * 60 * 60)
-        if (diffHours < 2) {
-            throw new ValidationError('Bookings can only be cancelled at least 2 hours before the start time')
+        if (diffHours < 1) {
+            throw new ValidationError('Bookings can only be cancelled at least 1 hour before the start time')
         }
     }
 

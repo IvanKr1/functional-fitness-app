@@ -129,12 +129,12 @@ export const BookingScheduler = () => {
               .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
         : [];
 
-    // Check if date is within 2-week advance booking limit
+    // Check if date is within 1-week advance booking limit
     const isWithinBookingWindow = (date: Date) => {
         const today = new Date();
         today.setHours(0, 0, 0, 0); // Start of today
-        const twoWeeksFromNow = addWeeks(today, 2);
-        return (isAfter(date, today) || isEqual(date, today)) && !isAfter(date, twoWeeksFromNow);
+        const lastBookableDay = addDays(today, 7); // 7 days ahead, inclusive
+        return (isAfter(date, today) || isEqual(date, today)) && (isBefore(date, addDays(today, 8)));
     };
 
     // Get booking limits status
@@ -277,13 +277,12 @@ export const BookingScheduler = () => {
             return;
         }
 
-        // Check if the booking time is in the past
+        // Check if the booking time is in the past or less than 1 hour from now
         const now = new Date();
         const selectedDateTime = new Date(selectedDate);
         selectedDateTime.setHours(startHours, startMinutes, 0, 0);
-        
-        if (selectedDateTime <= now) {
-            return; // Don't allow booking past times
+        if (selectedDateTime <= now || (selectedDateTime.getTime() - now.getTime()) < 60 * 60 * 1000) {
+            return; // Don't allow booking past times or less than 1 hour in advance
         }
 
         // Check if the booking time is within allowed hours (7:00 - 20:00)
@@ -504,7 +503,7 @@ export const BookingScheduler = () => {
         if (!isWithinBookingWindow(selectedDate)) {
             return (
                 <Typography color="error" sx={{ mt: 2, fontWeight: 500 }}>
-                    Možete rezervirati najviše 2 tjedna unaprijed.
+                    Možete rezervirati najviše 1 tjedan unaprijed.
                 </Typography>
             );
         }
@@ -680,9 +679,7 @@ export const BookingScheduler = () => {
         return {
           ...b,
           startTime: start.toISOString(),
-          endTime: end.toISOString(),
-          status: b.status || '',
-          notes: b.notes || ''
+          endTime: end.toISOString()
         }
       })
       .filter(b => {
@@ -730,8 +727,8 @@ export const BookingScheduler = () => {
                 <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }} className="text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
                     <ul className="list-none p-0 m-0 text-base sm:text-lg leading-relaxed sm:leading-normal text-gray-800 sm:text-gray-600">
                       <li>Odaberite datum i termin za rezervaciju treninga.</li>
-                      <li>Možete rezervirati do 3 termina tjedno, najviše 2 tjedna unaprijed.</li>
-                      <li>Rezervaciju možete otkazati najkasnije 2 sata prije početka termina.</li>
+                      <li>Možete rezervirati do 3 termina tjedno, najviše 1 tjedan unaprijed.</li>
+                      <li>Rezervaciju možete otkazati najkasnije 1 sat prije početka termina.</li>
                     </ul>
                 </Typography>
             </Box>
@@ -848,7 +845,7 @@ export const BookingScheduler = () => {
                                 shouldDisableDate={(date) => {
                                     // Disable Sundays
                                     if (date.getDay() === 0) return true;
-                                    // Disable dates beyond 2-week advance booking limit
+                                    // Disable dates beyond 1-week advance booking limit
                                     return !isWithinBookingWindow(date);
                                 }}
                                 sx={{
