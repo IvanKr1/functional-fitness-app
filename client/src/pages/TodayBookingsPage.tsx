@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Calendar, Clock, Search, ChevronLeft, ChevronRight, Filter, CheckCircle } from 'lucide-react'
+import { Calendar, Clock, Search, ChevronLeft, ChevronRight, Filter, CheckCircle, ChevronDown } from 'lucide-react'
 import { apiService } from '../services/api.js'
 import { useStore } from '../store/useStore.js'
 
@@ -32,16 +32,17 @@ export function TodayBookingsPage() {
   const [selectedHour, setSelectedHour] = useState<string>('all')
   const [selectedStatus, setSelectedStatus] = useState<string>('all')
   const [isMarkingCompleted, setIsMarkingCompleted] = useState(false)
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date())
+  const [showDatePicker, setShowDatePicker] = useState(false)
 
-  const fetchTodayBookings = async () => {
+  const fetchBookings = async (date: Date) => {
     try {
       setIsLoading(true)
       setError(null)
       
-      // Get today's date in ISO format
-      const today = new Date()
-      const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate())
-      const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999)
+      // Get the selected date in ISO format
+      const startOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate())
+      const endOfDay = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999)
       
       const response = await apiService.get<BookingsResponse>(
         `/bookings?startDate=${startOfDay.toISOString()}&endDate=${endOfDay.toISOString()}`
@@ -50,18 +51,18 @@ export function TodayBookingsPage() {
       if (response.success && response.data) {
         setBookings(response.data)
       } else {
-        setError(response.error || 'Failed to fetch today\'s bookings')
+        setError(response.error || 'Failed to fetch bookings')
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch today\'s bookings')
+      setError(err instanceof Error ? err.message : 'Failed to fetch bookings')
     } finally {
       setIsLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchTodayBookings()
-  }, [])
+    fetchBookings(selectedDate)
+  }, [selectedDate])
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSearchTerm(e.target.value)
@@ -95,7 +96,7 @@ export function TodayBookingsPage() {
 
       if (response.success && response.data) {
         // Refresh the bookings list
-        await fetchTodayBookings()
+        await fetchBookings(selectedDate)
         console.log(`Marked ${response.data.completedCount} booking${response.data.completedCount !== 1 ? 's' : ''} as completed`)
       } else {
         setError(response.error || 'Failed to mark bookings as completed')
@@ -105,6 +106,38 @@ export function TodayBookingsPage() {
     } finally {
       setIsMarkingCompleted(false)
     }
+  }
+
+  // Generate week days for the date picker
+  const generateWeekDays = (startDate: Date) => {
+    const days = []
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(startDate)
+      date.setDate(date.getDate() + i)
+      days.push(date)
+    }
+    return days
+  }
+
+  // Get the start of the week (Monday)
+  const getStartOfWeek = (date: Date) => {
+    const d = new Date(date)
+    const day = d.getDay()
+    const diff = d.getDate() - day + (day === 0 ? -6 : 1) // Adjust when day is Sunday
+    return new Date(d.setDate(diff))
+  }
+
+  const weekDays = generateWeekDays(getStartOfWeek(selectedDate))
+
+  const handleDateSelect = (date: Date) => {
+    setSelectedDate(date)
+    setShowDatePicker(false)
+  }
+
+  const navigateWeek = (direction: 'prev' | 'next') => {
+    const newDate = new Date(selectedDate)
+    newDate.setDate(newDate.getDate() + (direction === 'next' ? 7 : -7))
+    setSelectedDate(newDate)
   }
 
   // Filter bookings by search term, hour, and status
@@ -140,6 +173,23 @@ export function TodayBookingsPage() {
       month: 'long',
       day: 'numeric'
     })
+  }
+
+  const formatShortDate = (date: Date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric'
+    })
+  }
+
+  const isToday = (date: Date) => {
+    const today = new Date()
+    return date.toDateString() === today.toDateString()
+  }
+
+  const isSelectedDate = (date: Date) => {
+    return date.toDateString() === selectedDate.toDateString()
   }
 
   const getStatusColor = (status: string) => {
@@ -192,8 +242,8 @@ export function TodayBookingsPage() {
             <div className="flex items-center">
               <Calendar className="h-8 w-8 text-blue-600 mr-3" />
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Today's Bookings</h1>
-                <p className="text-sm text-gray-600">{formatDate(new Date().toISOString())}</p>
+                <h1 className="text-2xl font-bold text-gray-900">Bookings</h1>
+                <p className="text-sm text-gray-600">{formatDate(selectedDate.toISOString())}</p>
               </div>
             </div>
             <div className="flex items-center space-x-2">
@@ -210,6 +260,49 @@ export function TodayBookingsPage() {
                   {isMarkingCompleted ? 'Marking...' : 'Mark Completed'}
                 </button>
               )}
+            </div>
+          </div>
+
+          {/* Week Date Picker */}
+          <div className="bg-white border border-gray-200 rounded-lg p-4">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-medium text-gray-900">Select Date</h3>
+              <div className="flex items-center space-x-2">
+                <button
+                  onClick={() => navigateWeek('prev')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => navigateWeek('next')}
+                  className="p-2 text-gray-400 hover:text-gray-600 rounded-md hover:bg-gray-100"
+                >
+                  <ChevronRight className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+            <div className="grid grid-cols-7 gap-2">
+              {weekDays.map((date, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleDateSelect(date)}
+                  className={`p-3 rounded-lg border text-center transition-colors ${
+                    isSelectedDate(date)
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : isToday(date)
+                      ? 'bg-blue-50 text-blue-700 border-blue-200'
+                      : 'bg-white text-gray-700 border-gray-200 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="text-xs font-medium">
+                    {date.toLocaleDateString('en-US', { weekday: 'short' })}
+                  </div>
+                  <div className="text-sm font-bold">
+                    {date.getDate()}
+                  </div>
+                </button>
+              ))}
             </div>
           </div>
 
@@ -309,7 +402,7 @@ export function TodayBookingsPage() {
                       <td colSpan={5} className="px-6 py-12 text-center text-gray-500">
                         {searchTerm || selectedHour !== 'all' || selectedStatus !== 'all'
                           ? 'No bookings match your filters'
-                          : 'No bookings for today'
+                          : `No bookings for ${formatShortDate(selectedDate)}`
                         }
                       </td>
                     </tr>
