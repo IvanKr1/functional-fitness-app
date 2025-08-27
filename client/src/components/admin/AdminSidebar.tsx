@@ -22,7 +22,7 @@ const navItems = [
     to: '/admin/users-to-pay',
   },
   {
-    label: "Today's Bookings",
+    label: "Bookings",
     icon: Clock,
     to: '/admin/today-bookings',
   },
